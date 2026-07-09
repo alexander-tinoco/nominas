@@ -123,7 +123,7 @@ export const LeftBookPage: React.FC = () => {
                     strokeOpacity={0.3}
                   />
                   <Tooltip 
-                    formatter={(val: number) => [formatCurrency(val), '']}
+                    formatter={(val: any) => [formatCurrency(Number(val)), '']}
                     contentStyle={{ 
                       backgroundColor: '#E7ECDF', 
                       borderColor: '#1E2A44', 
@@ -189,7 +189,7 @@ export const LeftBookPage: React.FC = () => {
                     strokeOpacity={0.3}
                   />
                   <Tooltip 
-                    formatter={(val: number) => [formatCurrency(val), 'Importe Total']}
+                    formatter={(val: any) => [formatCurrency(Number(val)), 'Importe Total']}
                     contentStyle={{ 
                       backgroundColor: '#E7ECDF', 
                       borderColor: '#1E2A44', 

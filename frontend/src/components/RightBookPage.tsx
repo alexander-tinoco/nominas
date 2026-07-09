@@ -108,7 +108,7 @@ export const RightBookPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-accounting-indigo/10 text-sm">
-                {data.data.map((emp) => (
+                {data?.data.map((emp) => (
                   <tr
                     key={emp.rfc}
                     onClick={() => handleRowClick(emp.rfc)}

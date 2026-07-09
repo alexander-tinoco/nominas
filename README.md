@@ -1,55 +1,88 @@
-# Proyecto de Nóminas (ETL & API REST)
+# Sistema de Auditoría y Consulta de Nóminas (SEP 2018)
 
-Este repositorio contiene una solución completa para procesar datos de nómina desde archivos Excel y exponerlos a través de una API RESTful.
+Este repositorio contiene una solución completa de ingeniería de datos y desarrollo de software para procesar, consultar y visualizar la nómina pública de personal gubernamental/educativo (correspondiente a la quincena 06 de 2018 — segunda quincena de marzo de 2018).
+
+---
+
+## Contexto de los Datos
+
+Los datos de entrada constan de dos archivos Excel:
+* **`archivo_1.xlsx` (Maestro):** Registros de pago únicos por plaza contable. Incluye la clave RFC, nombre del empleado, adscripción (Unidad/Subunidad/Centro de Trabajo) e importes totales agrupados.
+* **`archivo_2.xlsx` (Detalle):** Desglose concepto por concepto (percepciones y deducciones como sueldo base, ISR, seguridad social, seguros de vida) ligados al maestro por consecutivo.
 
 ---
 
 ## Estructura del Repositorio
 
-El proyecto se divide en dos secciones principales:
+El proyecto está diseñado bajo una arquitectura modular y limpia:
 
-* **[etl/](file:///home/alexander-tinoco/Documentos/github/nominas/etl/):** Contiene el pipeline ETL escrito en Python para extraer, limpiar, validar y cargar los datos desde los archivos Excel a una base de datos PostgreSQL.
-  * **[etl_nomina.py](file:///home/alexander-tinoco/Documentos/github/nominas/etl/etl_nomina.py):** Script consolidado y parametrizado del pipeline ETL.
-  * **[helpers/](file:///home/alexander-tinoco/Documentos/github/nominas/etl/helpers/):** Scripts auxiliares de desarrollo utilizados para las fases individuales de prueba (extracción, transformación, carga y validación).
-* **[backend/](file:///home/alexander-tinoco/Documentos/github/nominas/backend/):** API RESTful construida con Node.js, Express y PostgreSQL para consultar los datos cargados.
-  * **[src/](file:///home/alexander-tinoco/Documentos/github/nominas/backend/src/):** Código fuente de la API (controladores, rutas, middlewares y configuración de base de datos).
-  * **[test_endpoints.sh](file:///home/alexander-tinoco/Documentos/github/nominas/backend/test_endpoints.sh):** Script en Bash para probar de manera automatizada todos los endpoints de la API.
-  * **[README.md](file:///home/alexander-tinoco/Documentos/github/nominas/backend/README.md):** Documentación detallada de los endpoints de la API con ejemplos de solicitudes y respuestas.
-* **[raw_data/](file:///home/alexander-tinoco/Documentos/github/nominas/raw_data/):** Carpeta destinada a almacenar los archivos Excel de entrada (`archivo_1.xlsx` y `archivo_2.xlsx`).
-* **[docker-compose.yml](file:///home/alexander-tinoco/Documentos/github/nominas/docker-compose.yml):** Archivo de configuración de Docker Compose para levantar una base de datos PostgreSQL 16 local.
+```text
+nominas/
+├── docker-compose.yml         → Configura PostgreSQL 16-alpine (puerto 5433)
+├── README.md                  → Esta guía general de inicio rápido
+├── raw_data/                  → Almacena los archivos excel originales
+│
+├── etl/                       → MÓDULO PYTHON (ETL)
+│   ├── etl_nomina.py          → Script ETL de producción parametrizado
+│   └── helpers/               → Scripts individuales de prueba (desarrollo)
+│
+├── backend/                   → MÓDULO NODE.JS (API REST)
+│   ├── src/                   → Controladores, rutas y middlewares de Express
+│   ├── test_endpoints.sh      → Suite de pruebas automáticas con curl
+│   └── README.md              → Documentación detallada de endpoints y ejemplos JSON
+│
+└── frontend/                  → MÓDULO REACT (DASHBOARD)
+    ├── src/                   → Vistas, componentes contables y hooks de react-query
+    └── README.md              → Guía de compilación del frontend
+```
 
 ---
 
 ## Cómo Empezar
 
+Sigue estos pasos en orden para levantar todo el ecosistema en tu máquina local:
+
 ### 1. Iniciar la Base de Datos (Docker)
-Para levantar el contenedor PostgreSQL en segundo plano:
+Levanta el contenedor de PostgreSQL 16 en segundo plano:
 ```bash
 docker compose up -d
 ```
-*Nota: PostgreSQL se expone en el puerto `5433` para evitar conflictos con instancias existentes del puerto `5432`.*
+*Nota: PostgreSQL se expone en el puerto `5433` de tu máquina para evitar conflictos con el puerto local 5432.*
 
 ### 2. Ejecutar el Pipeline ETL (Python)
-Asegúrate de tener configurado tu entorno virtual en la raíz del proyecto e instala las dependencias de Python si no lo has hecho:
+Crea y activa un entorno virtual de Python, instala dependencias y ejecuta la carga:
 ```bash
+# Crear entorno virtual e instalar librerías
+python3 -m venv .venv
 .venv/bin/pip install pandas openpyxl sqlalchemy psycopg2-binary
-```
-Para ejecutar la carga de datos maestros y detalles a PostgreSQL:
-```bash
+
+# Correr el pipeline ETL (limpia, valida y carga 292k registros en ~35 segundos)
 .venv/bin/python etl/etl_nomina.py --mode initial --chunksize 10000
 ```
 
 ### 3. Ejecutar la API REST (Node.js)
-Accede a la carpeta del backend, configura las variables en `.env` e inicia la aplicación:
+Accede a la carpeta de backend, instala las dependencias e inicia el servidor en modo desarrollo:
 ```bash
 cd backend
 npm install
 npm run dev
 ```
+*El backend se ejecutará en `http://localhost:3000`. Puedes validar opcionalmente los endpoints ejecutando `./test_endpoints.sh` en otra terminal dentro de la misma carpeta.*
 
-Para probar que todos los endpoints funcionan de forma automática:
+### 4. Ejecutar el Dashboard (React)
+Accede a la carpeta de frontend, instala las dependencias e inicia el servidor de desarrollo de Vite:
 ```bash
-# Estando dentro de la carpeta /backend
-chmod +x test_endpoints.sh
-./test_endpoints.sh
+cd ../frontend
+npm install
+npm run dev
 ```
+*El dashboard se levantará en **`http://localhost:5173`**. Abre esta URL en tu navegador.*
+
+---
+
+## Características de Diseño Contable (Dashboard)
+
+* **Filtro de Quincenas Integrado:** La línea de tiempo superior simula talonarios perforados físicos. Puedes moverte entre periodos haciendo clic o usando las **flechas izquierda/derecha de tu teclado**.
+* **Visualización de Balances:** Gráficas con la paleta contable tradicional (verde papel de fondo, tinta índigo, percepciones en oro y deducciones en rojo).
+* **Talón de Pago Digitalizado:** Al hacer clic en un empleado, el sistema renderiza un recibo de nómina con bordes perforados en CSS, desgloses detallados y soporte nativo para impresión.
+* **Seguridad y Accesibilidad:** Enmascaramiento preventivo de RFCs en logs y analítica, cifras monoespaciadas para correcta alineación y manejo fluido del estado asíncrono con React Query.

@@ -1,7 +1,7 @@
 import React from 'react';
 import { useEmpleadoDetalle, useNominaDetalle } from '../api/client';
 import { useStore } from '../store/useStore';
-import { X, Printer, Landmark, ShieldCheck } from 'lucide-react';
+import { X, Printer, ShieldCheck } from 'lucide-react';
 
 export const PayStubDetail: React.FC = () => {
   const { selectedRfc, selectedQna, setSelectedRfc } = useStore();
