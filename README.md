@@ -1,178 +1,55 @@
-# API de Consulta de Nóminas
+# Proyecto de Nóminas (ETL & API REST)
 
-API RESTful desarrollada en Node.js y Express para consultar y reportar información de nómina cargada en PostgreSQL.
-
----
-
-## Requisitos Previos
-
-* Node.js (v18 o superior)
-* Base de datos PostgreSQL en funcionamiento (con el esquema de nóminas cargado)
+Este repositorio contiene una solución completa para procesar datos de nómina desde archivos Excel y exponerlos a través de una API RESTful.
 
 ---
 
-## Instalación y Configuración
+## Estructura del Repositorio
 
-1. **Instalar dependencias:**
-   ```bash
-   npm install
-   ```
+El proyecto se divide en dos secciones principales:
 
-2. **Configurar variables de entorno:**
-   Copia el archivo `.env.example` como `.env` y edita los valores con las credenciales de tu base de datos:
-   ```bash
-   cp .env.example .env
-   ```
-
----
-
-## Modos de Ejecución
-
-* **Desarrollo (con recarga automática mediante nodemon):**
-  ```bash
-  npm run dev
-  ```
-
-* **Producción:**
-  ```bash
-  npm start
-  ```
+* **[etl/](file:///home/alexander-tinoco/Documentos/github/nominas/etl/):** Contiene el pipeline ETL escrito en Python para extraer, limpiar, validar y cargar los datos desde los archivos Excel a una base de datos PostgreSQL.
+  * **[etl_nomina.py](file:///home/alexander-tinoco/Documentos/github/nominas/etl/etl_nomina.py):** Script consolidado y parametrizado del pipeline ETL.
+  * **[helpers/](file:///home/alexander-tinoco/Documentos/github/nominas/etl/helpers/):** Scripts auxiliares de desarrollo utilizados para las fases individuales de prueba (extracción, transformación, carga y validación).
+* **[backend/](file:///home/alexander-tinoco/Documentos/github/nominas/backend/):** API RESTful construida con Node.js, Express y PostgreSQL para consultar los datos cargados.
+  * **[src/](file:///home/alexander-tinoco/Documentos/github/nominas/backend/src/):** Código fuente de la API (controladores, rutas, middlewares y configuración de base de datos).
+  * **[test_endpoints.sh](file:///home/alexander-tinoco/Documentos/github/nominas/backend/test_endpoints.sh):** Script en Bash para probar de manera automatizada todos los endpoints de la API.
+  * **[README.md](file:///home/alexander-tinoco/Documentos/github/nominas/backend/README.md):** Documentación detallada de los endpoints de la API con ejemplos de solicitudes y respuestas.
+* **[raw_data/](file:///home/alexander-tinoco/Documentos/github/nominas/raw_data/):** Carpeta destinada a almacenar los archivos Excel de entrada (`archivo_1.xlsx` y `archivo_2.xlsx`).
+* **[docker-compose.yml](file:///home/alexander-tinoco/Documentos/github/nominas/docker-compose.yml):** Archivo de configuración de Docker Compose para levantar una base de datos PostgreSQL 16 local.
 
 ---
 
-## Documentación de Endpoints
+## Cómo Empezar
 
-### 1. Estado del Servidor
-* **`GET /health`**
-  * **Descripción:** Verifica el estado de salud de la API.
-  * **Ejemplo de respuesta (200 OK):**
-    ```json
-    {
-      "status": "ok",
-      "timestamp": "2026-07-09T20:31:53.000Z"
-    }
-    ```
+### 1. Iniciar la Base de Datos (Docker)
+Para levantar el contenedor PostgreSQL en segundo plano:
+```bash
+docker compose up -d
+```
+*Nota: PostgreSQL se expone en el puerto `5433` para evitar conflictos con instancias existentes del puerto `5432`.*
 
-### 2. Empleados
-* **`GET /api/empleados`**
-  * **Descripción:** Retorna la lista paginada de empleados únicos (sin duplicar RFC).
-  * **Query Params:**
-    * `search`: Búsqueda parcial e insensible a mayúsculas por RFC o Nombre.
-    * `page`: Número de página (Por defecto: `1`).
-    * `limit`: Cantidad de resultados (Por defecto: `20`, máximo: `100`).
-  * **Ejemplo de respuesta (200 OK):**
-    ```json
-    {
-      "data": [
-        { "rfc": "AASL980830F96", "nom_emp": "ABRAHAM SALAZAR LESLIE SAHIAN" }
-      ],
-      "pagination": {
-        "total": 10957,
-        "page": 1,
-        "limit": 1,
-        "totalPages": 10957
-      }
-    }
-    ```
+### 2. Ejecutar el Pipeline ETL (Python)
+Asegúrate de tener configurado tu entorno virtual en la raíz del proyecto e instala las dependencias de Python si no lo has hecho:
+```bash
+.venv/bin/pip install pandas openpyxl sqlalchemy psycopg2-binary
+```
+Para ejecutar la carga de datos maestros y detalles a PostgreSQL:
+```bash
+.venv/bin/python etl/etl_nomina.py --mode initial --chunksize 10000
+```
 
-* **`GET /api/empleados/:rfc`**
-  * **Descripción:** Retorna el historial de registros de nómina de un empleado específico ordenado cronológicamente.
-  * **Ejemplo de respuesta (200 OK):**
-    ```json
-    {
-      "rfc": "AEBG620203SV1",
-      "nombre": "ABREGO BATREZ GILBERTO",
-      "historial": [
-        {
-          "num_cons": 618,
-          "rfc": "AEBG620203SV1",
-          "nom_emp": "ABREGO BATREZ GILBERTO",
-          "tot_net_cheque": "3914.67",
-          "qna_pago": 201806
-          // ... resto de propiedades del registro maestro
-        }
-      ]
-    }
-    ```
+### 3. Ejecutar la API REST (Node.js)
+Accede a la carpeta del backend, configura las variables en `.env` e inicia la aplicación:
+```bash
+cd backend
+npm install
+npm run dev
+```
 
-### 3. Nómina
-* **`GET /api/nomina`**
-  * **Descripción:** Lista los registros maestros de nómina. No incluye los conceptos de detalle por desempeño.
-  * **Query Params:**
-    * `unidad`, `subunidad`, `cat_puesto`, `qna_ini`, `qna_fin` (Filtros exactos opcionales).
-    * `page`, `limit` (Paginación).
-  * **Ejemplo de respuesta (200 OK):**
-    ```json
-    {
-      "data": [
-        {
-          "num_cons": 0,
-          "rfc": "AAAA540923MV5",
-          "nom_emp": "ADAME ALBA ALFONSO",
-          "tot_net_cheque": "253.67",
-          "qna_pago": 201806
-        }
-      ],
-      "pagination": { "total": 15401, "page": 1, "limit": 1, "totalPages": 15401 }
-    }
-    ```
-
-* **`GET /api/nomina/:num_cons`**
-  * **Descripción:** Detalle completo de un registro de nómina por su consecutivo, incluyendo un desglose separado de percepciones y deducciones.
-  * **Ejemplo de respuesta (200 OK):**
-    ```json
-    {
-      "num_cons": 0,
-      "rfc": "AAAA540923MV5",
-      "nom_emp": "ADAME ALBA ALFONSO",
-      "tot_net_cheque": "253.67",
-      "percepciones": [
-        { "concepto": "1", "importe": 200.36, "qna_ini": 201806, "qna_fin": 201806 }
-      ],
-      "deducciones": [
-        { "concepto": "51", "importe": 43.42, "qna_ini": 201806, "qna_fin": 201806 }
-      ]
-    }
-    ```
-
-### 4. Reportes
-* **`GET /api/reportes/por-unidad`**
-  * **Descripción:** Totales acumulados de percepciones, deducciones y neto agrupados por unidad para una quincena específica.
-  * **Query Params:**
-    * `qna` (**Requerido**): Quincena a reportar (ej. `201806`).
-    * `subunidad`: Si se envía `true`, desglosa y agrupa el reporte también por subunidad.
-  * **Ejemplo de respuesta (200 OK):**
-    ```json
-    {
-      "qna": 201806,
-      "groupedBySubunidad": false,
-      "data": [
-        {
-          "etiqueta": "Unidad 10",
-          "unidad": 10,
-          "total_percepciones": 68462073.34,
-          "total_deducciones": 26852326.09,
-          "total_neto": 41609747.25
-        }
-      ]
-    }
-    ```
-
-* **`GET /api/reportes/conceptos`**
-  * **Descripción:** Sumatoria monetaria de cada concepto ordenados de mayor a menor importancia financiera.
-  * **Query Params:**
-    * `qna_start`, `qna_end` (Filtros de rango de quincenas opcionales).
-  * **Ejemplo de respuesta (200 OK):**
-    ```json
-    {
-      "filters": { "qna_start": null, "qna_end": null },
-      "data": [
-        {
-          "etiqueta": "C-1 (P)",
-          "concepto": "1",
-          "perc_ded": "P",
-          "total_importe": 43902461.62
-        }
-      ]
-    }
-    ```
+Para probar que todos los endpoints funcionan de forma automática:
+```bash
+# Estando dentro de la carpeta /backend
+chmod +x test_endpoints.sh
+./test_endpoints.sh
+```
