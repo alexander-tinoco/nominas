@@ -1,0 +1,2 @@
+// Controlador para nómina
+export {};
