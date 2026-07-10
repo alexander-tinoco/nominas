@@ -29,6 +29,7 @@ export interface NominaRegistro {
   tot_perc_cheque: number;
   tot_ded_cheque: number;
   tot_net_cheque: number;
+  edad?: number;
 }
 
 export interface ConceptoDetalle {
