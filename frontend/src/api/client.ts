@@ -67,8 +67,16 @@ export interface EmpleadoDetalleResponse {
   historial: NominaRegistro[];
 }
 
+export interface NominaSummary {
+  total: number;
+  totalPercepciones: number;
+  totalDeducciones: number;
+  totalNeto: number;
+}
+
 export interface NominaListResponse {
   data: NominaRegistro[];
+  summary: NominaSummary;
   pagination: Pagination;
 }
 

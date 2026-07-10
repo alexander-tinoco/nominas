@@ -271,8 +271,12 @@ export const getNominas = async (req, res, next) => {
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
     // Consultas SQL
-    const countQuery = `
-      SELECT COUNT(*) AS total
+    const summaryQuery = `
+      SELECT 
+        COUNT(*)::int AS total,
+        COALESCE(SUM(tot_perc_cheque), 0)::float AS total_percepciones,
+        COALESCE(SUM(tot_ded_cheque), 0)::float AS total_deducciones,
+        COALESCE(SUM(tot_net_cheque), 0)::float AS total_neto
       FROM nomina_registros
       ${whereClause}
     `;
@@ -287,16 +291,23 @@ export const getNominas = async (req, res, next) => {
     `;
 
     // Ejecutar consultas en paralelo
-    const [countResult, dataResult] = await Promise.all([
-      pool.query(countQuery, queryParams),
+    const [summaryResult, dataResult] = await Promise.all([
+      pool.query(summaryQuery, queryParams),
       pool.query(dataQuery, [...queryParams, limit, offset])
     ]);
 
-    const total = parseInt(countResult.rows[0].total, 10);
+    const summary = summaryResult.rows[0];
+    const total = summary.total;
     const totalPages = Math.ceil(total / limit);
 
     res.json({
       data: dataResult.rows,
+      summary: {
+        total,
+        totalPercepciones: summary.total_percepciones,
+        totalDeducciones: summary.total_deducciones,
+        totalNeto: summary.total_neto
+      },
       pagination: {
         total,
         page,

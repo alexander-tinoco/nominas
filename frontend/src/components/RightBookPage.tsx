@@ -754,79 +754,113 @@ export const RightBookPage: React.FC = () => {
                 </p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full text-left font-sans">
-                  <thead>
-                    <tr className="border-b border-accounting-indigo/30 text-[9px] uppercase tracking-wider text-accounting-graphite font-bold font-mono">
-                      <th className="py-2 px-2">RFC / Nombre</th>
-                      <th className="py-2 px-2 text-center">U / Sub</th>
-                      <th className="py-2 px-2 text-center">C.T.</th>
-                      <th className="py-2 px-2 text-center">Edad</th>
-                      <th className="py-2 px-2 text-right">Líquido Neto</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-accounting-indigo/10 text-xs">
-                    {dataAdvanced.data.map((reg) => (
-                      <tr
-                        key={reg.num_cons}
-                        onClick={() => handleRowClick(reg.rfc, reg.qna_pago)}
-                        className="bg-white hover:bg-accounting-paper/50 cursor-pointer transition-colors duration-150 group"
-                      >
-                        <td className="py-2 px-2 max-w-[150px] truncate text-accounting-indigo group-hover:text-accounting-green">
-                          <span className="font-mono text-xs font-bold block">{reg.rfc}</span>
-                          <span className="text-[10px] text-accounting-graphite group-hover:text-accounting-green">{reg.nom_emp}</span>
-                        </td>
-                        <td className="py-2 px-2 text-center font-mono text-accounting-indigo group-hover:text-accounting-green">
-                          {reg.unidad}/{reg.subunidad}
-                        </td>
-                        <td className="py-2 px-2 text-center font-mono text-accounting-indigo group-hover:text-accounting-green">
-                          {reg.ct_clasif}-{reg.ct_id}-{reg.ct_secuencial}
-                        </td>
-                        <td className="py-2 px-2 text-center font-mono text-accounting-indigo group-hover:text-accounting-green font-bold">
-                          {reg.edad !== null && reg.edad !== undefined ? `${reg.edad} a.` : 'N/D'}
-                        </td>
-                        <td className="py-2 px-2 text-right font-mono text-accounting-green font-bold">
-                          {formatCurrency(reg.tot_net_cheque)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+              <div className="flex flex-col flex-1 justify-between">
+                <div>
+                  {/* Panel de Métricas Dinámicas Contables */}
+                  {dataAdvanced.summary && (
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4 bg-accounting-paper/30 border border-accounting-indigo/15 p-2 rounded-sm font-mono text-[10px]">
+                      <div className="bg-white/60 p-2 rounded-sm border border-accounting-indigo/5">
+                        <span className="block text-[8px] text-accounting-graphite uppercase font-bold">Plazas Filtradas</span>
+                        <span className="font-bold text-accounting-indigo text-xs">
+                          {dataAdvanced.summary.total.toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="bg-white/60 p-2 rounded-sm border border-accounting-indigo/5">
+                        <span className="block text-[8px] text-accounting-graphite uppercase font-bold">Total Percepciones</span>
+                        <span className="font-bold text-accounting-gold text-xs">
+                          {formatCurrency(dataAdvanced.summary.totalPercepciones)}
+                        </span>
+                      </div>
+                      <div className="bg-white/60 p-2 rounded-sm border border-accounting-indigo/5">
+                        <span className="block text-[8px] text-accounting-graphite uppercase font-bold">Total Deducciones</span>
+                        <span className="font-bold text-accounting-red text-xs">
+                          -{formatCurrency(dataAdvanced.summary.totalDeducciones)}
+                        </span>
+                      </div>
+                      <div className="bg-white/60 p-2 rounded-sm border border-accounting-indigo/5">
+                        <span className="block text-[8px] text-accounting-graphite uppercase font-bold">Gasto Neto Liquidado</span>
+                        <span className="font-bold text-accounting-green text-xs">
+                          {formatCurrency(dataAdvanced.summary.totalNeto)}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full text-left font-sans">
+                      <thead>
+                        <tr className="border-b border-accounting-indigo/30 text-[9px] uppercase tracking-wider text-accounting-graphite font-bold font-mono">
+                          <th className="py-2 px-2">RFC / Nombre</th>
+                          <th className="py-2 px-2 text-center">U / Sub</th>
+                          <th className="py-2 px-2 text-center">C.T.</th>
+                          <th className="py-2 px-2 text-center">Edad</th>
+                          <th className="py-2 px-2 text-right">Líquido Neto</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-accounting-indigo/10 text-xs">
+                        {dataAdvanced.data.map((reg) => (
+                          <tr
+                            key={reg.num_cons}
+                            onClick={() => handleRowClick(reg.rfc, reg.qna_pago)}
+                            className="bg-white hover:bg-accounting-paper/50 cursor-pointer transition-colors duration-150 group"
+                          >
+                            <td className="py-2 px-2 max-w-[150px] truncate text-accounting-indigo group-hover:text-accounting-green">
+                              <span className="font-mono text-xs font-bold block">{reg.rfc}</span>
+                              <span className="text-[10px] text-accounting-graphite group-hover:text-accounting-green">{reg.nom_emp}</span>
+                            </td>
+                            <td className="py-2 px-2 text-center font-mono text-accounting-indigo group-hover:text-accounting-green">
+                              {reg.unidad}/{reg.subunidad}
+                            </td>
+                            <td className="py-2 px-2 text-center font-mono text-accounting-indigo group-hover:text-accounting-green">
+                              {reg.ct_clasif}-{reg.ct_id}-{reg.ct_secuencial}
+                            </td>
+                            <td className="py-2 px-2 text-center font-mono text-accounting-indigo group-hover:text-accounting-green font-bold">
+                              {reg.edad !== null && reg.edad !== undefined ? `${reg.edad} a.` : 'N/D'}
+                            </td>
+                            <td className="py-2 px-2 text-right font-mono text-accounting-green font-bold">
+                              {formatCurrency(reg.tot_net_cheque)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
 
-            {/* Paginador Avanzado */}
-            {dataAdvanced?.pagination && dataAdvanced.pagination.totalPages > 1 && (
-              <div className="flex items-center justify-between border-t border-accounting-indigo/20 pt-4 mt-4 font-mono text-xs text-accounting-graphite">
-                <button
-                  type="button"
-                  onClick={() => setPageAdvanced((p) => Math.max(1, p - 1))}
-                  disabled={pageAdvanced === 1}
-                  className="
-                    flex items-center gap-1 px-3 py-1.5 bg-white border border-accounting-indigo/20 rounded-sm
-                    hover:bg-accounting-paper/40 disabled:opacity-50 disabled:hover:bg-white transition-colors duration-150
-                  "
-                >
-                  <ChevronLeft className="w-3.5 h-3.5" />
-                  <span>Anterior</span>
-                </button>
-                
-                <span>
-                  Página {pageAdvanced} de {dataAdvanced.pagination.totalPages}
-                </span>
+                {/* Paginador Avanzado */}
+                {dataAdvanced?.pagination && dataAdvanced.pagination.totalPages > 1 && (
+                  <div className="flex items-center justify-between border-t border-accounting-indigo/20 pt-4 mt-4 font-mono text-xs text-accounting-graphite">
+                    <button
+                      type="button"
+                      onClick={() => setPageAdvanced((p) => Math.max(1, p - 1))}
+                      disabled={pageAdvanced === 1}
+                      className="
+                        flex items-center gap-1 px-3 py-1.5 bg-white border border-accounting-indigo/20 rounded-sm
+                        hover:bg-accounting-paper/40 disabled:opacity-50 disabled:hover:bg-white transition-colors duration-150
+                      "
+                    >
+                      <ChevronLeft className="w-3.5 h-3.5" />
+                      <span>Anterior</span>
+                    </button>
+                    
+                    <span>
+                      Página {pageAdvanced} de {dataAdvanced.pagination.totalPages}
+                    </span>
 
-                <button
-                  type="button"
-                  onClick={() => setPageAdvanced((p) => Math.min(dataAdvanced.pagination.totalPages, p + 1))}
-                  disabled={pageAdvanced === dataAdvanced.pagination.totalPages}
-                  className="
-                    flex items-center gap-1 px-3 py-1.5 bg-white border border-accounting-indigo/20 rounded-sm
-                    hover:bg-accounting-paper/40 disabled:opacity-50 disabled:hover:bg-white transition-colors duration-150
-                  "
-                >
-                  <span>Siguiente</span>
-                  <ChevronRight className="w-3.5 h-3.5" />
-                </button>
+                    <button
+                      type="button"
+                      onClick={() => setPageAdvanced((p) => Math.min(dataAdvanced.pagination.totalPages, p + 1))}
+                      disabled={pageAdvanced === dataAdvanced.pagination.totalPages}
+                      className="
+                        flex items-center gap-1 px-3 py-1.5 bg-white border border-accounting-indigo/20 rounded-sm
+                        hover:bg-accounting-paper/40 disabled:opacity-50 disabled:hover:bg-white transition-colors duration-150
+                      "
+                    >
+                      <span>Siguiente</span>
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>
