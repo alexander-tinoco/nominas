@@ -11,21 +11,51 @@ services:
       - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d nominas"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
-  pgadmin:
-    image: dpage/pgadmin4:latest
-    container_name: nominas_pgadmin
+  backend:
+    build:
+      context: ./backend
+      target: development
+    container_name: nominas_backend
     restart: always
-    environment:
-      PGADMIN_DEFAULT_EMAIL: admin@admin.com
-      PGADMIN_DEFAULT_PASSWORD: admin_password
     ports:
-      - "5050:80"
+      - "3000:3000"
     volumes:
-      - ./pgadmin/servers.json:/pgadmin4/servers.json
+      - ./backend:/app
+      - /app/node_modules
+    environment:
+      - PORT=3000
+      - NODE_ENV=development
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres_password
+      - DB_NAME=nominas
+      - CORS_ORIGIN=*
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      target: development
+    container_name: nominas_frontend
+    restart: always
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - VITE_API_URL=http://localhost:3000
+    depends_on:
+      - backend
 
 volumes:
   postgres_data:
-
