@@ -1,7 +1,7 @@
 import { logger } from './logger.js';
 
 // Middleware de manejo de errores centralizado
-const errorHandler = (err, req, res, next) => {
+const errorHandler = (err, req, res, _next) => {
   // Registrar el error con Pino
   logger.error({
     msg: "Error capturado por el middleware de Express",
