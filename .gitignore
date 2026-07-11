@@ -36,3 +36,6 @@ Thumbs.db
 # Base de datos local de SQLite (si se usa)
 *.db
 *.sqlite
+
+# Datos brutos de nómina (contiene información confidencial)
+raw_data/
