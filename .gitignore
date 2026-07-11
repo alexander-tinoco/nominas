@@ -39,3 +39,6 @@ Thumbs.db
 
 # Datos brutos de nómina (contiene información confidencial)
 raw_data/
+
+# Archivos locales de planificación
+PLAN_DE_ACCION.md
