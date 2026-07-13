@@ -8,10 +8,40 @@ Este repositorio contiene una solución completa de ingeniería de datos y desar
 
 | Indicador | Estado |
 |---|---|
-| CI (lint + typecheck + build) | ![CI](https://github.com/alexander-tinoco/nominas/actions/workflows/ci.yml/badge.svg) |
-| CD (build Docker + push GHCR) | ![CD](https://github.com/alexander-tinoco/nominas/actions/workflows/cd.yml/badge.svg) |
-| Cobertura de tests | **98.76 % statements · 100 % funciones** |
-| Tests | **96 tests** (Vitest + Supertest) |
+| **CI (Integración Continua)** | ![CI](https://github.com/alexander-tinoco/nominas/actions/workflows/ci.yml/badge.svg) |
+| **CD (Despliegue Continuo)** | ![CD](https://github.com/alexander-tinoco/nominas/actions/workflows/cd.yml/badge.svg) |
+| **Documentación de API** | [![API Docs](https://img.shields.io/badge/OpenAPI-Swagger-green.svg)](http://localhost:3000/api/docs) |
+| **Licencia** | [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) |
+| **Docker** | [![Docker Compose](https://img.shields.io/badge/Docker-Compose-blue.svg)](#cómo-ejecutar-con-docker) |
+| **Cobertura de tests** | **98.76 % statements · 100 % funciones** |
+
+---
+
+## Arquitectura del Sistema
+
+El siguiente diagrama muestra el flujo de datos y la relación entre los distintos módulos del ecosistema:
+
+```mermaid
+graph TD
+    subgraph Cliente
+        A[Dashboard React + Vite]
+    end
+    subgraph Servidor
+        B[API REST Express]
+        E[Swagger UI /api/docs]
+    end
+    subgraph Almacenamiento
+        C[(Base de Datos PostgreSQL 16)]
+    end
+    subgraph Procesamiento
+        D[ETL Pipeline Python]
+    end
+
+    A -->|Peticiones HTTP/JSON| B
+    B -->|Consulta SQL| C
+    E -->|Consulta Esquema| B
+    D -->|Carga masiva SQL| C
+```
 
 ---
 
@@ -41,23 +71,27 @@ nominas/
 ├── README.md                  → Esta guía general de inicio rápido
 ├── raw_data/                  → Almacena los archivos excel originales
 │
-├── .github/workflows/
-│   ├── ci.yml                 → Pipeline CI: lint, typecheck, tests y build
-│   └── cd.yml                 → Pipeline CD: build Docker + push a GHCR
+├── .github/
+│   ├── workflows/
+│   │   ├── ci.yml             → Pipeline CI: lint, typecheck, tests y build
+│   │   └── cd.yml             → Pipeline CD: build Docker + push a GHCR
+│   ├── ISSUE_TEMPLATE/        → Plantillas para Bugs y Features
+│   └── PULL_REQUEST_TEMPLATE.md → Plantilla de revisión para PRs
 │
 ├── etl/                       → MÓDULO PYTHON (ETL)
 │   ├── etl_nomina.py          → Script ETL de producción parametrizado
-│   └── helpers/               → Scripts individuales de prueba (desarrollo)
+│   └── tests/                 → Pruebas unitarias de las transformaciones
 │
 ├── backend/                   → MÓDULO NODE.JS (API REST)
 │   ├── src/
-│   │   ├── controllers/       → Lógica de negocio por recurso
+│   │   ├── controllers/       → Lógica de control y mapeo HTTP
+│   │   ├── services/          → Lógica de negocio y construcción de filtros
+│   │   ├── repositories/      → Acceso y consultas directas SQL
 │   │   ├── routes/            → Definición de rutas Express
 │   │   ├── middleware/        → Logger (Pino) y manejador de errores
 │   │   ├── config/db.js       → Pool de conexiones PostgreSQL
-│   │   ├── app.js             → Configuración de Express (CORS, Helmet, rate-limit)
-│   │   └── __tests__/         → Suite de tests unitarios y de integración (96 tests)
-│   ├── vitest.config.js       → Configuración de Vitest
+│   │   ├── config/swagger.js  → Configuración de Swagger OpenAPI
+│   │   └── __tests__/         → Suite de tests (96 tests)
 │   ├── eslint.config.js       → Configuración de ESLint (Flat Config)
 │   ├── Dockerfile             → Imagen multi-stage para producción
 │   └── README.md              → Documentación detallada de endpoints
@@ -70,11 +104,34 @@ nominas/
 
 ---
 
-## Cómo Empezar
+## Variables de Entorno
 
-### Opción A — Entorno completo con Docker (recomendado)
+El proyecto se configura dinámicamente mediante las siguientes variables de entorno:
 
-Levanta los tres servicios (PostgreSQL, backend y frontend) con un solo comando:
+### Backend (`backend/.env`)
+
+| Variable | Descripción | Valor por Defecto |
+|---|---|---|
+| `PORT` | Puerto de escucha de la API REST | `3000` |
+| `PGHOST` | Servidor de base de datos PostgreSQL | `localhost` |
+| `PGPORT` | Puerto de base de datos PostgreSQL | `5433` |
+| `PGUSER` | Usuario de base de datos PostgreSQL | `postgres` |
+| `PGPASSWORD` | Contraseña de base de datos PostgreSQL | `postgres_password` |
+| `PGDATABASE` | Nombre de la base de datos | `nominas` |
+| `CORS_ORIGIN` | Orígenes CORS permitidos | `*` |
+| `LOG_LEVEL` | Nivel mínimo para logger (Pino) | `info` |
+
+### Frontend (`frontend/.env`)
+
+| Variable | Descripción | Valor por Defecto |
+|---|---|---|
+| `VITE_API_URL` | Endpoint base de la API REST del backend | `http://localhost:3000` |
+
+---
+
+## Cómo Ejecutar con Docker (Recomendado)
+
+Puedes inicializar todo el ecosistema (Base de Datos + API REST + Dashboard Frontend) en segundo plano con un solo comando:
 
 ```bash
 docker compose up -d
@@ -82,117 +139,87 @@ docker compose up -d
 
 | Servicio | URL |
 |---|---|
-| Frontend (Dashboard) | http://localhost:80 |
-| Backend (API REST) | http://localhost:3000 |
-| PostgreSQL | localhost:5433 |
+| **Dashboard Frontend** | [http://localhost:80](http://localhost:80) |
+| **API REST Backend** | [http://localhost:3000](http://localhost:3000) |
+| **Documentación de API (Swagger)** | [http://localhost:3000/api/docs](http://localhost:3000/api/docs) |
+| **Base de Datos (PostgreSQL)** | `localhost:5433` |
 
-Luego ejecuta el ETL para cargar los datos (ver Opción B, paso 2).
+*Nota: Una vez levantado el entorno, debes ejecutar el ETL para poblar la base de datos (ver Paso 2 en la sección siguiente).*
 
 ---
 
-### Opción B — Desarrollo local (servicio por servicio)
+## Cómo Ejecutar de Forma Local (Desarrollo)
 
-#### 1. Iniciar la Base de Datos (Docker)
+### 1. Levantar Base de Datos
 ```bash
 docker compose up -d db
 ```
-*PostgreSQL se expone en el puerto `5433` para evitar conflictos con el 5432 local.*
 
-#### 2. Ejecutar el Pipeline ETL (Python)
+### 2. Ejecutar Pipeline ETL (Python)
 ```bash
 # Crear entorno virtual e instalar librerías
 python3 -m venv .venv
-.venv/bin/pip install pandas openpyxl sqlalchemy psycopg2-binary
+source .venv/bin/activate
+pip install pandas openpyxl sqlalchemy psycopg2-binary pytest
 
 # Correr el pipeline ETL (limpia, valida y carga 292k registros en ~35 segundos)
-.venv/bin/python etl/etl_nomina.py --mode initial --chunksize 10000
+python etl/etl_nomina.py --mode initial --chunksize 10000
 ```
 
-#### 3. Ejecutar la API REST (Node.js)
+### 3. Ejecutar API REST (Node.js)
 ```bash
 cd backend
 npm install
 npm run dev
 ```
-*El backend corre en `http://localhost:3000`.*
 
-#### 4. Ejecutar el Dashboard (React)
+### 4. Ejecutar Dashboard Frontend (React)
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
-*El dashboard corre en `http://localhost:5173`.*
+
+---
+
+## Endpoints Disponibles (API)
+
+A continuación se detallan las rutas principales expuestas por la API REST:
+
+* **`GET /health`** - Chequeo de estado de salud del sistema.
+* **`GET /api/docs`** - Interfaz de documentación interactiva de Swagger/OpenAPI.
+* **`GET /api/empleados`** - Lista paginada y filtrable de empleados ordenados por nombre.
+* **`GET /api/empleados/:rfc`** - Historial detallado de recibos del empleado asociado a un RFC.
+* **`GET /api/nomina`** - Consulta estructurada de recibos de nómina con soporte de 32 filtros combinados y resumen de acumulados.
+* **`GET /api/nomina/:num_cons`** - Desglose de percepciones y deducciones de un recibo específico.
+* **`GET /api/reportes/por-unidad`** - Acumulados financieros agrupados por unidad y/o subunidad organizativa.
+* **`GET /api/reportes/conceptos`** - Sumatorias acumuladas globales para cada concepto de nómina.
 
 ---
 
 ## Testing
 
-El backend cuenta con una suite de **96 tests** (88 de integración usando **Vitest** y **Supertest**, y 8 unitarios para los filtros), organizados en un archivo por controlador/endpoint/función:
-
-```
-backend/src/__tests__/
-├── health.test.js       →  3 tests  — GET /health
-├── empleados.test.js    → 14 tests  — GET /api/empleados y /:rfc
-├── nomina.test.js       → 44 tests  — GET /api/nomina y /:num_cons
-├── reportes.test.js     → 19 tests  — GET /api/reportes/*
-├── middleware.test.js   →  8 tests  — errorHandler y logger
-└── nominaFilters.test.js → 8 tests — Lógica pura de filtros SQL
-```
-
-### Ejecutar los tests
+### Backend (Vitest + Supertest)
 
 ```bash
 cd backend
-
-# Correr todos los tests una vez
-npm test
-
-# Modo watch (re-ejecuta al guardar cambios)
-npm run test:watch
-
-# Reporte de cobertura de código
-npm run test:coverage
+npm test               # Ejecutar los 96 tests una vez
+npm run test:watch     # Ejecutar tests en modo watch
+npm run test:coverage  # Generar reporte de cobertura de código
 ```
 
-### Cobertura de código
+### Frontend (Vitest + React Testing Library)
 
-| Archivo | Statements | Branch | Funciones | Líneas |
-|---|---|---|---|---|
-| **Total** | **98.76%** | **93.83%** | **100%** | **98.75%** |
-| `app.js` | 100% | 100% | 100% | 100% |
-| `routes/*.js` | 100% | 100% | 100% | 100% |
-| `controllers/empleados.js` | 100% | 80% | 100% | 100% |
-| `controllers/nomina.js` | 100% | 98.9% | 100% | 100% |
-| `controllers/reportes.js` | 100% | 100% | 100% | 100% |
-| `middleware/errorHandler.js` | 100% | 87.5% | 100% | 100% |
-| `middleware/logger.js` | 100% | 100% | 100% | 100% |
-| `config/db.js` | 66.7%* | 50%* | 100% | 66.7%* |
+```bash
+cd frontend
+npm test               # Ejecutar los 7 tests de componentes
+```
 
-> \* `db.js` contiene el bloque `await pool.connect()` que se ejecuta al importar el módulo real. En los tests este módulo está completamente mockeado, por lo que esas líneas son **físicamente inalcanzables** sin una base de datos activa.
+### ETL (Pytest)
 
----
-
-## CI / CD
-
-### Pipeline CI (`.github/workflows/ci.yml`)
-
-Se ejecuta en cada `push` y `pull_request` a `main`:
-
-| Job | Qué hace |
-|---|---|
-| `backend-ci` | ESLint · Vitest (96 tests) · `tsc --noEmit` |
-| `frontend-ci` | ESLint · TypeScript · `vite build` |
-
-### Pipeline CD (`.github/workflows/cd.yml`)
-
-Se ejecuta en cada `push` a `main`:
-
-| Paso | Qué hace |
-|---|---|
-| Build backend | Imagen Docker multi-stage (Node 22 → alpine) |
-| Build frontend | Imagen Docker multi-stage (Node 22 → Nginx alpine) |
-| Push | Publica ambas imágenes en `ghcr.io/alexander-tinoco/nominas-*` |
+```bash
+PYTHONPATH=. pytest etl/tests/ # Ejecutar los 5 tests de transformaciones
+```
 
 ---
 

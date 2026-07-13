@@ -50,3 +50,11 @@ coverage/
 
 # Archivos locales de planificación
 PLAN_DE_ACCION.md
+
+# Python cache / virtualenv
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.venv/

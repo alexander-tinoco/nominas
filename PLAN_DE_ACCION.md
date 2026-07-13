@@ -73,27 +73,27 @@
 ## 🥉 Prioridad 3 — Documentación de API
 
 ### 3.1 Swagger / OpenAPI
-- [ ] Instalar `swagger-ui-express` + `swagger-jsdoc` en el backend
-- [ ] Documentar endpoint `GET /api/empleados` con todos sus query params
-- [ ] Documentar endpoint `GET /api/nomina` con todos los filtros disponibles
-- [ ] Documentar endpoint `GET /api/reportes/por-unidad`
-- [ ] Documentar endpoint `GET /api/reportes/conceptos`
-- [ ] Exponer UI en `GET /api/docs`
-- [ ] Agregar badge de API docs al README
+- [x] Instalar `swagger-ui-express` + `swagger-jsdoc` en el backend
+- [x] Documentar endpoint `GET /api/empleados` con todos sus query params
+- [x] Documentar endpoint `GET /api/nomina` con todos los filtros disponibles
+- [x] Documentar endpoint `GET /api/reportes/por-unidad`
+- [x] Documentar endpoint `GET /api/reportes/conceptos`
+- [x] Exponer UI en `GET /api/docs`
+- [x] Agregar badge de API docs al README
 
 ### 3.2 README mejorado
-- [ ] Agregar badges: CI status, Docker, licencia
-- [ ] Agregar diagrama de arquitectura en Mermaid (frontend → API → PostgreSQL)
-- [ ] Agregar sección de "Cómo ejecutar con Docker" (un solo comando)
-- [ ] Agregar sección de "Variables de entorno" con tabla descriptiva
-- [ ] Agregar capturas de pantalla de la interfaz
-- [ ] Agregar sección de endpoints disponibles
+- [x] Agregar badges: CI status, Docker, licencia
+- [x] Agregar diagrama de arquitectura en Mermaid (frontend → API → PostgreSQL)
+- [x] Agregar sección de "Cómo ejecutar con Docker" (un solo comando)
+- [x] Agregar sección de "Variables de entorno" con tabla descriptiva
+- [x] Agregar capturas de pantalla de la interfaz
+- [x] Agregar sección de endpoints disponibles
 
 ### 3.3 Documentación de contribución
-- [ ] Crear `CONTRIBUTING.md` con convenciones de código y commits
-- [ ] Crear `.github/PULL_REQUEST_TEMPLATE.md` con checklist
-- [ ] Crear `.github/ISSUE_TEMPLATE/bug_report.md`
-- [ ] Crear `.github/ISSUE_TEMPLATE/feature_request.md`
+- [x] Crear `CONTRIBUTING.md` con convenciones de código y commits
+- [x] Crear `.github/PULL_REQUEST_TEMPLATE.md` con checklist
+- [x] Crear `.github/ISSUE_TEMPLATE/bug_report.md`
+- [x] Crear `.github/ISSUE_TEMPLATE/feature_request.md`
 
 ---
 
