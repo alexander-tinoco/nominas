@@ -11,7 +11,7 @@ Este repositorio contiene una solución completa de ingeniería de datos y desar
 | CI (lint + typecheck + build) | ![CI](https://github.com/alexander-tinoco/nominas/actions/workflows/ci.yml/badge.svg) |
 | CD (build Docker + push GHCR) | ![CD](https://github.com/alexander-tinoco/nominas/actions/workflows/cd.yml/badge.svg) |
 | Cobertura de tests | **98.76 % statements · 100 % funciones** |
-| Tests | **88 tests** (Vitest + Supertest) |
+| Tests | **96 tests** (Vitest + Supertest) |
 
 ---
 
@@ -20,6 +20,14 @@ Este repositorio contiene una solución completa de ingeniería de datos y desar
 Los datos de entrada constan de dos archivos Excel:
 * **`archivo_1.xlsx` (Maestro):** Registros de pago únicos por plaza contable. Incluye la clave RFC, nombre del empleado, adscripción (Unidad/Subunidad/Centro de Trabajo) e importes totales agrupados.
 * **`archivo_2.xlsx` (Detalle):** Desglose concepto por concepto (percepciones y deducciones como sueldo base, ISR, seguridad social, seguros de vida) ligados al maestro por consecutivo.
+
+---
+
+## Seguridad y acceso a los datos
+
+* **Datos de acceso público:** Todos los endpoints expuestos en el backend son de solo lectura (métodos `GET`) y operan sobre información de nómina que es de carácter gubernamental público (SEP 2018).
+* **Ausencia de autenticación:** Al tratarse de datos abiertos y de libre consulta, no se implementó un mecanismo de autenticación en este proyecto.
+* **Escalabilidad de seguridad:** En caso de migrar a un entorno corporativo o con datos privados, se requeriría incorporar un middleware de autenticación (por ejemplo, JWT con OAuth2) y autorización basada en roles (RBAC) para restringir el acceso a los registros.
 
 ---
 
@@ -48,7 +56,7 @@ nominas/
 │   │   ├── middleware/        → Logger (Pino) y manejador de errores
 │   │   ├── config/db.js       → Pool de conexiones PostgreSQL
 │   │   ├── app.js             → Configuración de Express (CORS, Helmet, rate-limit)
-│   │   └── __tests__/         → Suite de tests unitarios (88 tests)
+│   │   └── __tests__/         → Suite de tests unitarios y de integración (96 tests)
 │   ├── vitest.config.js       → Configuración de Vitest
 │   ├── eslint.config.js       → Configuración de ESLint (Flat Config)
 │   ├── Dockerfile             → Imagen multi-stage para producción
@@ -120,7 +128,7 @@ npm run dev
 
 ## Testing
 
-El backend cuenta con una suite de **88 tests de integración** usando **Vitest** y **Supertest**, organizados en un archivo por controlador/endpoint:
+El backend cuenta con una suite de **96 tests** (88 de integración usando **Vitest** y **Supertest**, y 8 unitarios para los filtros), organizados en un archivo por controlador/endpoint/función:
 
 ```
 backend/src/__tests__/
@@ -128,7 +136,8 @@ backend/src/__tests__/
 ├── empleados.test.js    → 14 tests  — GET /api/empleados y /:rfc
 ├── nomina.test.js       → 44 tests  — GET /api/nomina y /:num_cons
 ├── reportes.test.js     → 19 tests  — GET /api/reportes/*
-└── middleware.test.js   →  8 tests  — errorHandler y logger
+├── middleware.test.js   →  8 tests  — errorHandler y logger
+└── nominaFilters.test.js → 8 tests — Lógica pura de filtros SQL
 ```
 
 ### Ejecutar los tests
@@ -172,7 +181,7 @@ Se ejecuta en cada `push` y `pull_request` a `main`:
 
 | Job | Qué hace |
 |---|---|
-| `backend-ci` | ESLint · Vitest (88 tests) · `tsc --noEmit` |
+| `backend-ci` | ESLint · Vitest (96 tests) · `tsc --noEmit` |
 | `frontend-ci` | ESLint · TypeScript · `vite build` |
 
 ### Pipeline CD (`.github/workflows/cd.yml`)
