@@ -63,10 +63,10 @@
 - [x] Test: `QuincenaTimeline` muestra la quincena seleccionada
 
 ### 2.3 ETL — Tests unitarios (Python)
-- [ ] Instalar `pytest` en el entorno virtual
-- [ ] Crear `etl/tests/`
-- [ ] Test: funciones de transformación con dataset ficticio
-- [ ] Test: validaciones de esquema de columnas
+- [x] Instalar `pytest` en el entorno virtual
+- [x] Crear `etl/tests/`
+- [x] Test: funciones de transformación con dataset ficticio
+- [x] Test: validaciones de esquema de columnas
 
 ---
 

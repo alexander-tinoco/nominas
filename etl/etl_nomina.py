@@ -54,6 +54,48 @@ def parse_arguments():
     )
     return parser.parse_args()
 
+def clean_text_columns(df):
+    """
+    Elimina espacios al inicio y al final en columnas de tipo texto.
+    """
+    df = df.copy()
+    for col in df.select_dtypes(include=['object', 'string']).columns:
+        df[col] = df[col].astype(str).str.strip()
+    return df
+
+def transform_maestro(df):
+    """
+    Valida y convierte tipos de datos del archivo maestro.
+    """
+    df = df.copy()
+    df['num_cons'] = df['num_cons'].astype(int)
+    for qna_col in ['qna_ini', 'qna_fin', 'qna_pago']:
+        df[qna_col] = df[qna_col].astype(int)
+    for money_col in ['tot_perc_cheque', 'tot_ded_cheque', 'tot_net_cheque']:
+        df[money_col] = df[money_col].astype(float)
+    return df
+
+def transform_detalle(df):
+    """
+    Valida y convierte tipos de datos del archivo de detalle.
+    """
+    df = df.copy()
+    df['num_cons'] = df['num_cons'].astype(int)
+    for qna_col in ['qna_ini', 'qna_fin']:
+        df[qna_col] = df[qna_col].astype(int)
+    df['importe'] = df['importe'].astype(float)
+    df['concepto'] = df['concepto'].apply(
+        lambda x: str(int(float(x))) if x.replace('.', '', 1).isdigit() and '.' in x else x
+    )
+    return df
+
+def filter_orphans(df1, df2):
+    """
+    Filtra los registros huérfanos del archivo de detalle (cuyo num_cons no existe en el maestro).
+    """
+    df1_cons = set(df1['num_cons'])
+    return df2[df2['num_cons'].isin(df1_cons)].copy()
+
 def run_ddl(engine, mode):
     """
     Crea las tablas en la base de datos.
@@ -162,28 +204,12 @@ def main():
         
         # Limpieza de textos (strip)
         logger.info("Aplicando limpieza de espacios (strip) en columnas de texto...")
-        # Pandas 3 warning avoidance: use explicit object/string dtype selection
-        for col in df1.select_dtypes(include=['object', 'string']).columns:
-            df1[col] = df1[col].astype(str).str.strip()
-        for col in df2.select_dtypes(include=['object', 'string']).columns:
-            df2[col] = df2[col].astype(str).str.strip()
+        df1 = clean_text_columns(df1)
+        df2 = clean_text_columns(df2)
 
-        # Validación de tipos en df1
-        df1['num_cons'] = df1['num_cons'].astype(int)
-        for qna_col in ['qna_ini', 'qna_fin', 'qna_pago']:
-            df1[qna_col] = df1[qna_col].astype(int)
-        for money_col in ['tot_perc_cheque', 'tot_ded_cheque', 'tot_net_cheque']:
-            df1[money_col] = df1[money_col].astype(float)
-
-        # Validación de tipos en df2
-        df2['num_cons'] = df2['num_cons'].astype(int)
-        for qna_col in ['qna_ini', 'qna_fin']:
-            df2[qna_col] = df2[qna_col].astype(int)
-        df2['importe'] = df2['importe'].astype(float)
-        # Normalizar conceptos
-        df2['concepto'] = df2['concepto'].apply(
-            lambda x: str(int(float(x))) if x.replace('.', '', 1).isdigit() and '.' in x else x
-        )
+        # Validación y transformación de tipos
+        df1 = transform_maestro(df1)
+        df2 = transform_detalle(df2)
 
         # Detección de Nulos
         nulls_df1 = df1.isna().sum().sum()
@@ -203,8 +229,8 @@ def main():
         orphans = df2[~df2['num_cons'].isin(df1_cons)]
         if len(orphans) > 0:
             logger.warning(f"Se detectaron {len(orphans)} registros huérfanos en el archivo de detalle (num_cons no existe en maestro).")
-            # En caso de huérfanos, podríamos filtrarlos para evitar fallas de FK en BD
-            df2 = df2[df2['num_cons'].isin(df1_cons)]
+            # En caso de huérfanos, filtrarlos para evitar fallas de FK en BD
+            df2 = filter_orphans(df1, df2)
             logger.warning("Registros huérfanos eliminados del set de datos para conservar integridad referencial.")
 
         # -------------------------------------------------------------
@@ -237,8 +263,6 @@ def main():
         logger.info(f"Cargando {len(df1):,} registros maestros a 'nomina_registros' en lotes de {args.chunksize}...")
         t_start = time.time()
         
-        # Si es reload y ya existen registros con el mismo num_cons, eliminamos los anteriores o arrojamos advertencia.
-        # to_sql con if_exists='append' fallará si encuentra duplicados de PK, lo cual es correcto y seguro.
         df1.to_sql(
             name='nomina_registros',
             con=engine,
