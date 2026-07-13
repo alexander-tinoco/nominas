@@ -44,8 +44,8 @@ export const findReporteConceptos = async (pQnaStart, pQnaEnd) => {
       perc_ded,
       SUM(importe)::float AS total_importe
     FROM nomina_conceptos
-    WHERE ($1::int IS NULL OR qna_ini >= $1)
-      AND ($2::int IS NULL OR qna_fin <= $2)
+    WHERE ($1::int IS NULL OR qna_fin >= $1)
+      AND ($2::int IS NULL OR qna_ini <= $2)
     GROUP BY concepto, perc_ded
     ORDER BY total_importe DESC
   `;

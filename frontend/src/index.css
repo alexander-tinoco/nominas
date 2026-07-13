@@ -2,6 +2,8 @@
 
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --color-accounting-paper: #E7ECDF;    /* verde papel contable */
   --color-accounting-indigo: #1E2A44;   /* tinta indigo */
