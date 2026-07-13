@@ -81,7 +81,7 @@ app.get('/health', async (req, res) => {
   let dbStatus = 'healthy';
   try {
     await pool.query('SELECT 1');
-  } catch (err) {
+  } catch {
     dbStatus = 'unhealthy';
   }
 

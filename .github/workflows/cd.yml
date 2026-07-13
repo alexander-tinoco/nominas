@@ -1,8 +1,8 @@
 name: CD (Delivery)
 
 on:
-  push:
-    branches: [ main ]
+  release:
+    types: [published]
 
 # Permisos para escribir imágenes en GitHub Container Registry (ghcr.io)
 permissions:
@@ -39,8 +39,8 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}
           tags: |
+            type=ref,event=tag
             type=raw,value=latest
-            type=sha,format=short
 
       - name: Build and push Backend image
         uses: docker/build-push-action@v5
@@ -61,8 +61,8 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE_NAME }}
           tags: |
+            type=ref,event=tag
             type=raw,value=latest
-            type=sha,format=short
 
       - name: Build and push Frontend image
         uses: docker/build-push-action@v5
