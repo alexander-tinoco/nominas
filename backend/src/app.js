@@ -9,8 +9,12 @@ import errorHandler from './middleware/errorHandler.js';
 import empleadosRoutes from './routes/empleados.js';
 import nominaRoutes from './routes/nomina.js';
 import reportesRoutes from './routes/reportes.js';
+import { setupSwagger } from './config/swagger.js';
 
 const app = express();
+
+// Configurar Swagger API Docs
+setupSwagger(app);
 
 // 1. Cabeceras HTTP seguras con Helmet
 app.use(helmet());
