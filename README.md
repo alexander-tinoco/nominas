@@ -4,6 +4,17 @@ Este repositorio contiene una solución completa de ingeniería de datos y desar
 
 ---
 
+## Estado del Proyecto
+
+| Indicador | Estado |
+|---|---|
+| CI (lint + typecheck + build) | ![CI](https://github.com/alexander-tinoco/nominas/actions/workflows/ci.yml/badge.svg) |
+| CD (build Docker + push GHCR) | ![CD](https://github.com/alexander-tinoco/nominas/actions/workflows/cd.yml/badge.svg) |
+| Cobertura de tests | **98.76 % statements · 100 % funciones** |
+| Tests | **88 tests** (Vitest + Supertest) |
+
+---
+
 ## Contexto de los Datos
 
 Los datos de entrada constan de dos archivos Excel:
@@ -18,21 +29,34 @@ El proyecto está diseñado bajo una arquitectura modular y limpia:
 
 ```text
 nominas/
-├── docker-compose.yml         → Configura PostgreSQL 16-alpine (puerto 5433)
+├── docker-compose.yml         → Orquesta PostgreSQL, backend y frontend
 ├── README.md                  → Esta guía general de inicio rápido
 ├── raw_data/                  → Almacena los archivos excel originales
+│
+├── .github/workflows/
+│   ├── ci.yml                 → Pipeline CI: lint, typecheck, tests y build
+│   └── cd.yml                 → Pipeline CD: build Docker + push a GHCR
 │
 ├── etl/                       → MÓDULO PYTHON (ETL)
 │   ├── etl_nomina.py          → Script ETL de producción parametrizado
 │   └── helpers/               → Scripts individuales de prueba (desarrollo)
 │
 ├── backend/                   → MÓDULO NODE.JS (API REST)
-│   ├── src/                   → Controladores, rutas y middlewares de Express
-│   ├── test_endpoints.sh      → Suite de pruebas automáticas con curl
-│   └── README.md              → Documentación detallada de endpoints y ejemplos JSON
+│   ├── src/
+│   │   ├── controllers/       → Lógica de negocio por recurso
+│   │   ├── routes/            → Definición de rutas Express
+│   │   ├── middleware/        → Logger (Pino) y manejador de errores
+│   │   ├── config/db.js       → Pool de conexiones PostgreSQL
+│   │   ├── app.js             → Configuración de Express (CORS, Helmet, rate-limit)
+│   │   └── __tests__/         → Suite de tests unitarios (88 tests)
+│   ├── vitest.config.js       → Configuración de Vitest
+│   ├── eslint.config.js       → Configuración de ESLint (Flat Config)
+│   ├── Dockerfile             → Imagen multi-stage para producción
+│   └── README.md              → Documentación detallada de endpoints
 │
 └── frontend/                  → MÓDULO REACT (DASHBOARD)
     ├── src/                   → Vistas, componentes contables y hooks de react-query
+    ├── Dockerfile             → Imagen Nginx para producción
     └── README.md              → Guía de compilación del frontend
 ```
 
@@ -40,17 +64,33 @@ nominas/
 
 ## Cómo Empezar
 
-Sigue estos pasos en orden para levantar todo el ecosistema en tu máquina local:
+### Opción A — Entorno completo con Docker (recomendado)
 
-### 1. Iniciar la Base de Datos (Docker)
-Levanta el contenedor de PostgreSQL 16 en segundo plano:
+Levanta los tres servicios (PostgreSQL, backend y frontend) con un solo comando:
+
 ```bash
 docker compose up -d
 ```
-*Nota: PostgreSQL se expone en el puerto `5433` de tu máquina para evitar conflictos con el puerto local 5432.*
 
-### 2. Ejecutar el Pipeline ETL (Python)
-Crea y activa un entorno virtual de Python, instala dependencias y ejecuta la carga:
+| Servicio | URL |
+|---|---|
+| Frontend (Dashboard) | http://localhost:80 |
+| Backend (API REST) | http://localhost:3000 |
+| PostgreSQL | localhost:5433 |
+
+Luego ejecuta el ETL para cargar los datos (ver Opción B, paso 2).
+
+---
+
+### Opción B — Desarrollo local (servicio por servicio)
+
+#### 1. Iniciar la Base de Datos (Docker)
+```bash
+docker compose up -d db
+```
+*PostgreSQL se expone en el puerto `5433` para evitar conflictos con el 5432 local.*
+
+#### 2. Ejecutar el Pipeline ETL (Python)
 ```bash
 # Crear entorno virtual e instalar librerías
 python3 -m venv .venv
@@ -60,23 +100,90 @@ python3 -m venv .venv
 .venv/bin/python etl/etl_nomina.py --mode initial --chunksize 10000
 ```
 
-### 3. Ejecutar la API REST (Node.js)
-Accede a la carpeta de backend, instala las dependencias e inicia el servidor en modo desarrollo:
+#### 3. Ejecutar la API REST (Node.js)
 ```bash
 cd backend
 npm install
 npm run dev
 ```
-*El backend se ejecutará en `http://localhost:3000`. Puedes validar opcionalmente los endpoints ejecutando `./test_endpoints.sh` en otra terminal dentro de la misma carpeta.*
+*El backend corre en `http://localhost:3000`.*
 
-### 4. Ejecutar el Dashboard (React)
-Accede a la carpeta de frontend, instala las dependencias e inicia el servidor de desarrollo de Vite:
+#### 4. Ejecutar el Dashboard (React)
 ```bash
-cd ../frontend
+cd frontend
 npm install
 npm run dev
 ```
-*El dashboard se levantará en **`http://localhost:5173`**. Abre esta URL en tu navegador.*
+*El dashboard corre en `http://localhost:5173`.*
+
+---
+
+## Testing
+
+El backend cuenta con una suite de **88 tests de integración** usando **Vitest** y **Supertest**, organizados en un archivo por controlador/endpoint:
+
+```
+backend/src/__tests__/
+├── health.test.js       →  3 tests  — GET /health
+├── empleados.test.js    → 14 tests  — GET /api/empleados y /:rfc
+├── nomina.test.js       → 44 tests  — GET /api/nomina y /:num_cons
+├── reportes.test.js     → 19 tests  — GET /api/reportes/*
+└── middleware.test.js   →  8 tests  — errorHandler y logger
+```
+
+### Ejecutar los tests
+
+```bash
+cd backend
+
+# Correr todos los tests una vez
+npm test
+
+# Modo watch (re-ejecuta al guardar cambios)
+npm run test:watch
+
+# Reporte de cobertura de código
+npm run test:coverage
+```
+
+### Cobertura de código
+
+| Archivo | Statements | Branch | Funciones | Líneas |
+|---|---|---|---|---|
+| **Total** | **98.76%** | **93.83%** | **100%** | **98.75%** |
+| `app.js` | 100% | 100% | 100% | 100% |
+| `routes/*.js` | 100% | 100% | 100% | 100% |
+| `controllers/empleados.js` | 100% | 80% | 100% | 100% |
+| `controllers/nomina.js` | 100% | 98.9% | 100% | 100% |
+| `controllers/reportes.js` | 100% | 100% | 100% | 100% |
+| `middleware/errorHandler.js` | 100% | 87.5% | 100% | 100% |
+| `middleware/logger.js` | 100% | 100% | 100% | 100% |
+| `config/db.js` | 66.7%* | 50%* | 100% | 66.7%* |
+
+> \* `db.js` contiene el bloque `await pool.connect()` que se ejecuta al importar el módulo real. En los tests este módulo está completamente mockeado, por lo que esas líneas son **físicamente inalcanzables** sin una base de datos activa.
+
+---
+
+## CI / CD
+
+### Pipeline CI (`.github/workflows/ci.yml`)
+
+Se ejecuta en cada `push` y `pull_request` a `main`:
+
+| Job | Qué hace |
+|---|---|
+| `backend-ci` | ESLint · Vitest (88 tests) · `tsc --noEmit` |
+| `frontend-ci` | ESLint · TypeScript · `vite build` |
+
+### Pipeline CD (`.github/workflows/cd.yml`)
+
+Se ejecuta en cada `push` a `main`:
+
+| Paso | Qué hace |
+|---|---|
+| Build backend | Imagen Docker multi-stage (Node 22 → alpine) |
+| Build frontend | Imagen Docker multi-stage (Node 22 → Nginx alpine) |
+| Push | Publica ambas imágenes en `ghcr.io/alexander-tinoco/nominas-*` |
 
 ---
 
