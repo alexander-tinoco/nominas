@@ -5,21 +5,37 @@ updates:
     directory: "/backend"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 1
+    groups:
+      backend-dependencies:
+        patterns:
+          - "*"
 
   # Monitorear dependencias del frontend (Node/npm)
   - package-ecosystem: "npm"
     directory: "/frontend"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 1
+    groups:
+      frontend-dependencies:
+        patterns:
+          - "*"
 
   # Monitorear dependencias del ETL (Python/pip)
   - package-ecosystem: "pip"
     directory: "/etl"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 1
+    groups:
+      etl-dependencies:
+        patterns:
+          - "*"
 
   # Monitorear dependencias de GitHub Actions
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 1
