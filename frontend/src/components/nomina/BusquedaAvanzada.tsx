@@ -13,7 +13,8 @@ import {
   Home, 
   FileText, 
   ChevronDown, 
-  ChevronUp 
+  ChevronUp,
+  Download
 } from 'lucide-react';
 
 interface BusquedaAvanzadaProps {
@@ -31,6 +32,41 @@ export const BusquedaAvanzada: React.FC<BusquedaAvanzadaProps> = ({ onRowClick }
     handleClearFilters,
     handleAdvancedSearchSubmit
   } = useAdvancedNominaFilters();
+
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExportCsv = async () => {
+    try {
+      setIsExporting(true);
+      const params = new URLSearchParams();
+      Object.entries(appliedFilters).forEach(([key, val]) => {
+        if (val !== undefined && val !== null && val !== '') {
+          params.append(key, String(val));
+        }
+      });
+      // Aseguramos que la URL del backend provenga de variables de entorno de Vite o fallback correcto
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+      const url = `${apiUrl}/api/nomina/export?${params.toString()}`;
+      
+      const response = await fetch(url);
+      if (!response.ok) throw new Error('Error al descargar el reporte');
+      
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      a.download = `nomina_filtrada_${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(downloadUrl);
+    } catch (err) {
+      console.error(err);
+      alert('Ocurrió un error al intentar exportar los registros contables a CSV');
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   // Secciones colapsables de filtros
   const [showPersonal, setShowPersonal] = useState(true);
@@ -412,25 +448,40 @@ export const BusquedaAvanzada: React.FC<BusquedaAvanzadaProps> = ({ onRowClick }
         </div>
 
         {/* BOTONES DE ACCIÓN */}
-        <div className="flex gap-2 justify-end mt-2 pt-2 border-t border-accounting-indigo/10">
+        <div className="flex gap-2 justify-end mt-2 pt-2 border-t border-accounting-indigo/10 dark:border-zinc-800">
+          <button
+            type="button"
+            onClick={handleExportCsv}
+            disabled={isExporting}
+            className="
+              mr-auto px-3 py-1.5 bg-accounting-green dark:bg-emerald-700 text-white font-sans text-xs rounded-sm font-semibold flex items-center gap-1
+              hover:bg-accounting-green/90 dark:hover:bg-emerald-600 disabled:opacity-50 transition-colors focus:ring-1 focus:ring-accounting-green focus:outline-none
+            "
+            aria-label="Exportar todos los registros contables filtrados a formato CSV"
+          >
+            <Download className="w-3.5 h-3.5" aria-hidden="true" />
+            <span>{isExporting ? 'Exportando...' : 'Exportar CSV'}</span>
+          </button>
           <button
             type="button"
             onClick={handleClearFilters}
             className="
-              px-3 py-1.5 bg-accounting-paper text-accounting-indigo font-sans text-xs rounded-sm font-semibold border border-accounting-indigo/20
-              hover:bg-accounting-paper/85 transition-colors focus:outline-none
+              px-3 py-1.5 bg-accounting-paper dark:bg-zinc-800 text-accounting-indigo dark:text-zinc-200 font-sans text-xs rounded-sm font-semibold border border-accounting-indigo/20 dark:border-zinc-700
+              hover:bg-accounting-paper/85 dark:hover:bg-zinc-750 transition-colors focus:ring-1 focus:ring-accounting-green focus:outline-none
             "
+            aria-label="Limpiar filtros seleccionados"
           >
             Limpiar Filtros
           </button>
           <button
             type="submit"
             className="
-              px-5 py-1.5 bg-accounting-indigo text-accounting-paper font-sans text-xs rounded-sm font-semibold flex items-center gap-1
-              hover:bg-accounting-indigo/90 focus:outline-none transition-colors
+              px-5 py-1.5 bg-accounting-indigo dark:bg-zinc-700 text-accounting-paper dark:text-zinc-100 font-sans text-xs rounded-sm font-semibold flex items-center gap-1
+              hover:bg-accounting-indigo/90 dark:hover:bg-zinc-660 focus:ring-1 focus:ring-accounting-green focus:outline-none transition-colors
             "
+            aria-label="Filtrar libros contables"
           >
-            <Search className="w-3.5 h-3.5" />
+            <Search className="w-3.5 h-3.5" aria-hidden="true" />
             Filtrar Libros
           </button>
         </div>

@@ -82,3 +82,33 @@ export const getNominaById = async (numCons) => {
     deducciones
   };
 };
+
+export const exportNominasToCsv = async (query = {}) => {
+  const { conditions, params } = buildNominaFilters(query);
+  const rows = await nominaRepository.findForExport({ conditions, params });
+
+  const headers = [
+    'num_cons', 'rfc', 'nom_emp', 'ent_fed', 'ct_clasif', 'ct_id', 'ct_secuencial',
+    'ct_digito_ver', 'cod_pago', 'unidad', 'subunidad', 'cat_puesto', 'horas',
+    'cons_plaza', 'nivel_sueldo', 'mot_mov', 'qna_ini', 'qna_fin', 'qna_pago',
+    'tot_perc_cheque', 'tot_ded_cheque', 'tot_net_cheque', 'edad'
+  ];
+
+  const escapeCsv = (val) => {
+    if (val === null || val === undefined) return '';
+    const str = String(val).trim();
+    if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r')) {
+      return `"${str.replace(/"/g, '""')}"`;
+    }
+    return str;
+  };
+
+  const csvRows = [headers.join(',')];
+
+  for (const row of rows) {
+    const values = headers.map(h => escapeCsv(row[h]));
+    csvRows.push(values.join(','));
+  }
+
+  return csvRows.join('\n');
+};

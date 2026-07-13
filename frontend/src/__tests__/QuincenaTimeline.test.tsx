@@ -24,8 +24,8 @@ describe('QuincenaTimeline Component', () => {
     render(<QuincenaTimeline quincenas={quincenas} />);
 
     // Verificar que se renderizan ambas quincenas
-    const qna05Button = screen.getByRole('button', { name: /Seleccionar quincena 05 del año 2018/i });
-    const qna06Button = screen.getByRole('button', { name: /Seleccionar quincena 06 del año 2018/i });
+    const qna05Button = screen.getByRole('tab', { name: /Seleccionar quincena 05 del año 2018/i });
+    const qna06Button = screen.getByRole('tab', { name: /Seleccionar quincena 06 del año 2018/i });
 
     expect(qna05Button).toBeInTheDocument();
     expect(qna06Button).toBeInTheDocument();
@@ -39,7 +39,7 @@ describe('QuincenaTimeline Component', () => {
     const quincenas = [201805, 201806];
     render(<QuincenaTimeline quincenas={quincenas} />);
 
-    const qna05Button = screen.getByRole('button', { name: /Seleccionar quincena 05 del año 2018/i });
+    const qna05Button = screen.getByRole('tab', { name: /Seleccionar quincena 05 del año 2018/i });
     fireEvent.click(qna05Button);
 
     expect(mockSetSelectedQna).toHaveBeenCalledWith(201805);

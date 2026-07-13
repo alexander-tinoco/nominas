@@ -58,3 +58,18 @@ export const findById = async (numCons) => {
     conceptos: conceptosResult.rows
   };
 };
+
+export const findForExport = async ({ conditions, params }) => {
+  const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+
+  const query = `
+    SELECT *, 
+           ${edadExpression} AS edad
+    FROM nomina_registros
+    ${whereClause}
+    ORDER BY num_cons ASC
+  `;
+
+  const result = await pool.query(query, params);
+  return result.rows;
+};

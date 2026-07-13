@@ -72,7 +72,7 @@ describe('RightBookPage Component', () => {
     render(<RightBookPage />);
 
     // Hacer click en el selector de Filtros Avanzados
-    const advancedTabButton = screen.getByRole('button', { name: /filtros avanzados/i });
+    const advancedTabButton = screen.getByRole('tab', { name: /filtros avanzados/i });
     fireEvent.click(advancedTabButton);
 
     // Debe mostrar campos de búsqueda avanzada
@@ -81,8 +81,8 @@ describe('RightBookPage Component', () => {
     expect(screen.getByPlaceholderText('Ej. 10')).toBeInTheDocument(); // Entidad Fed
 
     // Debe mostrar la sección de botones de filtrar/limpiar
-    expect(screen.getByRole('button', { name: /limpiar filtros/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /filtrar libros/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /limpiar/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /filtrar/i })).toBeInTheDocument();
   });
 
   it('dispara setSelectedRfc al hacer clic en una fila de la tabla simple', () => {

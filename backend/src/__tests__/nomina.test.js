@@ -481,6 +481,24 @@ describe('GET /api/nomina/:num_cons', () => {
     });
   });
 
+  describe('GET /api/nomina/export', () => {
+    it('retorna 200 y el string CSV con cabeceras correctas', async () => {
+      pool.query.mockResolvedValueOnce({
+        rows: [
+          { num_cons: 1, rfc: 'LOAA880101ABC', nom_emp: 'Ana Lopez', ent_fed: 9, tot_net_cheque: 5000.50 }
+        ]
+      });
+
+      const res = await request(app).get('/api/nomina/export');
+
+      expect(res.status).toBe(200);
+      expect(res.headers['content-type']).toContain('text/csv');
+      expect(res.text).toContain('num_cons,rfc,nom_emp');
+      expect(res.text).toContain('LOAA880101ABC');
+      expect(res.text).toContain('Ana Lopez');
+    });
+  });
+
   describe('errores', () => {
     it('retorna 500 cuando el pool lanza un error', async () => {
       pool.query.mockRejectedValueOnce(new Error('DB error'));

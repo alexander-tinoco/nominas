@@ -42,16 +42,22 @@ export const QuincenaTimeline: React.FC<QuincenaTimelineProps> = ({
   }, [selectedQna, quincenas, setSelectedQna]);
 
   return (
-    <div className="w-full bg-[#E2E7DB] border-b-2 border-accounting-indigo/30 py-4 px-6 select-none">
+    <div 
+      className="w-full bg-[#E2E7DB] dark:bg-zinc-900 border-b-2 border-accounting-indigo/30 dark:border-zinc-800 py-4 px-6 select-none transition-colors duration-200"
+      role="region"
+      aria-label="Línea de tiempo de quincenas de nómina"
+    >
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <span className="text-xs uppercase tracking-widest text-accounting-graphite font-mono font-bold">Libro de Quincenas</span>
-          <h2 className="font-serif text-2xl font-extrabold text-accounting-indigo">Registro General de Nómina</h2>
+          <span className="text-xs uppercase tracking-widest text-accounting-graphite dark:text-zinc-400 font-mono font-bold">Libro de Quincenas</span>
+          <h2 className="font-serif text-2xl font-extrabold text-accounting-indigo dark:text-zinc-100">Registro General de Nómina</h2>
         </div>
         
         {/* Strip horizontal scrollable de quincenas */}
         <div 
           ref={containerRef}
+          role="tablist"
+          aria-label="Selección de periodo de nómina"
           className="flex items-center gap-6 overflow-x-auto py-2 scroll-smooth no-scrollbar"
         >
           {quincenas.map((qna) => {
@@ -62,14 +68,16 @@ export const QuincenaTimeline: React.FC<QuincenaTimelineProps> = ({
               <button
                 key={qna}
                 onClick={() => setSelectedQna(qna)}
+                role="tab"
+                aria-selected={isSelected}
                 aria-label={`Seleccionar quincena ${qnaNum} del año ${year}`}
                 className={`
                   relative flex flex-col items-center justify-center min-w-[100px] h-[72px] px-3
-                  border border-accounting-indigo/40 rounded-sm
+                  border border-accounting-indigo/40 dark:border-zinc-700 rounded-sm
                   perforated-left perforated-right transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-accounting-green
                   ${isSelected 
-                    ? 'bg-accounting-green text-accounting-paper border-accounting-green shadow-inner scale-105' 
-                    : 'bg-white text-accounting-indigo hover:bg-white/80 hover:scale-102'
+                    ? 'bg-accounting-green dark:bg-emerald-700 text-accounting-paper dark:text-zinc-100 border-accounting-green dark:border-emerald-700 shadow-inner scale-105' 
+                    : 'bg-white dark:bg-zinc-800 text-accounting-indigo dark:text-zinc-200 hover:bg-white/80 dark:hover:bg-zinc-750 hover:scale-102'
                   }
                 `}
               >
@@ -83,7 +91,7 @@ export const QuincenaTimeline: React.FC<QuincenaTimelineProps> = ({
                   {year}
                 </span>
                 {isSelected && (
-                  <div className="absolute -bottom-1 w-2 h-2 bg-accounting-green rotate-45 border-r border-b border-accounting-green"></div>
+                  <div className="absolute -bottom-1 w-2 h-2 bg-accounting-green dark:bg-emerald-700 rotate-45 border-r border-b border-accounting-green dark:border-emerald-700"></div>
                 )}
               </button>
             );

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getNominas, getNominaById } from '../controllers/nomina.js';
+import { getNominas, getNominaById, exportNominas } from '../controllers/nomina.js';
 
 const router = Router();
 
@@ -202,6 +202,68 @@ const router = Router();
  *         description: Error interno del servidor o de base de datos.
  */
 router.get('/', getNominas);
+
+/**
+ * @openapi
+ * /api/nomina/export:
+ *   get:
+ *     summary: Exportar recibos de nómina a formato CSV
+ *     description: Genera y descarga un archivo CSV con todos los registros de nómina que coincidan con los filtros dinámicos provistos (sin paginación).
+ *     tags:
+ *       - Nómina
+ *     parameters:
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Búsqueda general por RFC o nombre parcial.
+ *       - in: query
+ *         name: rfc
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: nom_emp
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: ent_fed
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: unidad
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: subunidad
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: cat_puesto
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: qna_pago
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: neto_min
+ *         schema:
+ *           type: number
+ *       - in: query
+ *         name: neto_max
+ *         schema:
+ *           type: number
+ *     responses:
+ *       200:
+ *         description: Archivo CSV generado con éxito.
+ *         content:
+ *           text/csv:
+ *             schema:
+ *               type: string
+ *       500:
+ *         description: Error de base de datos o interno.
+ */
+router.get('/export', exportNominas);
 
 /**
  * @openapi

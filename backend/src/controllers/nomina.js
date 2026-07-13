@@ -25,3 +25,15 @@ export const getNominaById = async (req, res, next) => {
     next(err);
   }
 };
+
+// GET /api/nomina/export
+export const exportNominas = async (req, res, next) => {
+  try {
+    const csv = await nominaService.exportNominasToCsv(req.query);
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename=nomina_export.csv');
+    res.send(csv);
+  } catch (err) {
+    next(err);
+  }
+};

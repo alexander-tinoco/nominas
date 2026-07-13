@@ -86,6 +86,7 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background-attachment: fixed;
+  transition: background-color 200ms ease, color 200ms ease;
 }
 
 /* Scrollbar personalizado estilo libro contable */
@@ -102,4 +103,37 @@ body {
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #1E2A44; 
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   ESTILOS DE MODO OSCURO (Soporte dark:)
+   ───────────────────────────────────────────────────────────────────────────── */
+.dark body {
+  background-color: #09090b; /* zinc-950 */
+  color: #f4f4f5; /* zinc-100 */
+}
+
+/* Modificación de perforaciones contables para simular fondo oscuro */
+.dark .perforated-bottom::after {
+  background-image: radial-gradient(circle at center, #09090b 4px, transparent 5px);
+}
+.dark .perforated-top::before {
+  background-image: radial-gradient(circle at center, #09090b 4px, transparent 5px);
+}
+.dark .perforated-left::before {
+  background-image: radial-gradient(circle at center, #09090b 4px, transparent 5px);
+}
+.dark .perforated-right::after {
+  background-image: radial-gradient(circle at center, #09090b 4px, transparent 5px);
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: #18181b; /* zinc-900 */
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: #3f3f46; /* zinc-700 */
+  border-radius: 4px;
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #71717a; /* zinc-500 */
 }
