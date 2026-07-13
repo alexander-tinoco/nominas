@@ -29,8 +29,8 @@ jobs:
         run: npm run lint
         working-directory: backend
 
-      - name: Run tests
-        run: npm run test
+      - name: Run tests (Vitest)
+        run: npm test
         working-directory: backend
 
   frontend-ci:
