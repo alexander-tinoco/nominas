@@ -40,5 +40,13 @@ Thumbs.db
 # Datos brutos de nómina (contiene información confidencial)
 raw_data/
 
+# Build / artefactos generados
+dist/
+build/
+
+# Reportes de cobertura de tests (generados por vitest --coverage)
+coverage/
+*.lcov
+
 # Archivos locales de planificación
 PLAN_DE_ACCION.md
