@@ -155,13 +155,20 @@ def run_ddl(engine, mode):
     );
     """
     
-    # Crear índices si no existen
+    # Crear índices si no existen para optimizar el rendimiento de las consultas y búsquedas frecuentes
     indices_ddl = """
+    -- Índices existentes para búsquedas y llaves foráneas
     CREATE INDEX IF NOT EXISTS idx_registros_rfc ON nomina_registros (rfc);
     CREATE INDEX IF NOT EXISTS idx_registros_qna_ini ON nomina_registros (qna_ini);
     CREATE INDEX IF NOT EXISTS idx_registros_qna_fin ON nomina_registros (qna_fin);
     CREATE INDEX IF NOT EXISTS idx_conceptos_num_cons ON nomina_conceptos (num_cons);
     CREATE INDEX IF NOT EXISTS idx_conceptos_concepto ON nomina_conceptos (concepto);
+
+    -- Índices adicionales sugeridos por análisis de filtros dinámicos frecuentes
+    CREATE INDEX IF NOT EXISTS idx_registros_unidad ON nomina_registros (unidad);
+    CREATE INDEX IF NOT EXISTS idx_registros_cat_puesto ON nomina_registros (cat_puesto);
+    CREATE INDEX IF NOT EXISTS idx_registros_qna_pago ON nomina_registros (qna_pago);
+    CREATE INDEX IF NOT EXISTS idx_registros_unidad_subunidad ON nomina_registros (unidad, subunidad);
     """
 
     logger.info("Creando tablas si no existen...")

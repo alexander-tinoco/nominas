@@ -1,17 +1,14 @@
 import pg from 'pg';
-import dotenv from 'dotenv';
-
-// Cargar variables de entorno
-dotenv.config();
+import env from './env.js';
 
 const { Pool } = pg;
 
 const pool = new Pool({
-  host: process.env.DB_HOST || 'localhost',
-  port: parseInt(process.env.DB_PORT || '5433', 10),
-  user: process.env.DB_USER || 'postgres',
-  password: process.env.DB_PASSWORD || 'postgres_password',
-  database: process.env.DB_NAME || 'nominas',
+  host: env.PGHOST,
+  port: env.PGPORT,
+  user: env.PGUSER,
+  password: env.PGPASSWORD,
+  database: env.PGDATABASE,
   max: 20, // Número máximo de conexiones simultáneas en el pool
   idleTimeoutMillis: 30000, // Tiempo para cerrar conexiones inactivas
   connectionTimeoutMillis: 2000, // Tiempo límite para establecer conexión

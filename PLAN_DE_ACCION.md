@@ -100,23 +100,23 @@
 ## 4️⃣ Prioridad 4 — Calidad y Seguridad
 
 ### 4.1 Validación de entorno
-- [ ] Instalar `envalid` o `zod` en el backend
-- [ ] Validar todas las variables de entorno al iniciar la app (fail fast)
-- [ ] Documentar cada variable con tipo y descripción
+- [x] Instalar `envalid` o `zod` en el backend
+- [x] Validar todas las variables de entorno al iniciar la app (fail fast)
+- [x] Documentar cada variable con tipo y descripción
 
 ### 4.2 Seguridad del backend
-- [ ] Rate limiting más granular por endpoint (actualmente global)
-- [ ] Agregar `Content-Security-Policy` headers
-- [ ] Configurar `Dependabot` en GitHub para updates automáticos de dependencias
-- [ ] Agregar `gitleaks` o `truffleHog` al CI para detectar secrets accidentales
+- [x] Rate limiting más granular por endpoint (actualmente global)
+- [x] Agregar `Content-Security-Policy` headers
+- [x] Configurar `Dependabot` en GitHub para updates automáticos de dependencias
+- [x] Agregar `gitleaks` o `truffleHog` al CI para detectar secrets accidentales
 
 ### 4.3 Índices adicionales en PostgreSQL
-- [ ] Analizar queries más frecuentes con `EXPLAIN ANALYZE`
-- [ ] Agregar índice en `unidad`
-- [ ] Agregar índice en `cat_puesto`
-- [ ] Agregar índice en `qna_pago`
-- [ ] Agregar índice compuesto en `(unidad, subunidad)`
-- [ ] Documentar índices en el DDL del ETL
+- [x] Analizar queries más frecuentes con `EXPLAIN ANALYZE`
+- [x] Agregar índice en `unidad`
+- [x] Agregar índice en `cat_puesto`
+- [x] Agregar índice en `qna_pago`
+- [x] Agregar índice compuesto en `(unidad, subunidad)`
+- [x] Documentar índices en el DDL del ETL
 
 ---
 

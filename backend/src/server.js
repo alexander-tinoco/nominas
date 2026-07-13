@@ -1,7 +1,8 @@
+import env from './config/env.js';
 import app from './app.js';
 import { logger } from './middleware/logger.js';
 
-const PORT = process.env.PORT || 3000;
+const PORT = env.PORT;
 
 const server = app.listen(PORT, () => {
   logger.info(`Servidor Express escuchando en el puerto ${PORT} (NODE_ENV: ${process.env.NODE_ENV || 'development'})`);
