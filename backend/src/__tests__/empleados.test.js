@@ -48,6 +48,24 @@ describe('GET /api/empleados', () => {
       expect(res.status).toBe(200);
       expect(res.body.pagination.limit).toBe(100);
     });
+
+    it('clampea page mínima a 1 cuando se pasa un valor inválido', async () => {
+      mockEmpleados(10, []);
+
+      const res = await request(app).get('/api/empleados?page=-5');
+
+      expect(res.status).toBe(200);
+      expect(res.body.pagination.page).toBe(1);
+    });
+
+    it('calcula totalPages=0 cuando no hay resultados', async () => {
+      mockEmpleados(0, []);
+
+      const res = await request(app).get('/api/empleados');
+
+      expect(res.status).toBe(200);
+      expect(res.body.pagination).toMatchObject({ total: 0, totalPages: 0 });
+    });
   });
 
   describe('búsqueda', () => {
@@ -67,6 +85,34 @@ describe('GET /api/empleados', () => {
 
       const callParams = pool.query.mock.calls[0][1];
       expect(callParams).toContain('%ana%');
+    });
+
+    it('recorta espacios del término de búsqueda', async () => {
+      mockEmpleados(1, []);
+
+      await request(app).get('/api/empleados?search=  garcia  ');
+
+      const callParams = pool.query.mock.calls[0][1];
+      expect(callParams).toContain('%garcia%');
+    });
+
+    it('sin ?search pasa null al pool (sin filtro)', async () => {
+      mockEmpleados(5, []);
+
+      await request(app).get('/api/empleados');
+
+      const callParams = pool.query.mock.calls[0][1];
+      expect(callParams).toContain(null);
+    });
+  });
+
+  describe('errores', () => {
+    it('retorna 500 cuando el pool lanza un error', async () => {
+      pool.query.mockRejectedValueOnce(new Error('DB connection refused'));
+
+      const res = await request(app).get('/api/empleados');
+
+      expect(res.status).toBe(500);
     });
   });
 });
@@ -92,5 +138,26 @@ describe('GET /api/empleados/:rfc', () => {
     expect(res.body).toHaveProperty('rfc', 'LOAA880101ABC');
     expect(res.body).toHaveProperty('nombre', 'Ana López');
     expect(Array.isArray(res.body.historial)).toBe(true);
+  });
+
+  it('retorna el nombre del primer registro del historial', async () => {
+    pool.query.mockResolvedValueOnce({
+      rows: [
+        { rfc: 'LOAA880101ABC', nom_emp: 'Ana López', qna_pago: 202401 },
+        { rfc: 'LOAA880101ABC', nom_emp: 'Ana López', qna_pago: 202402 },
+      ],
+    });
+
+    const res = await request(app).get('/api/empleados/LOAA880101ABC');
+
+    expect(res.body.historial).toHaveLength(2);
+  });
+
+  it('retorna 500 cuando el pool lanza un error', async () => {
+    pool.query.mockRejectedValueOnce(new Error('DB error'));
+
+    const res = await request(app).get('/api/empleados/LOAA880101ABC');
+
+    expect(res.status).toBe(500);
   });
 });

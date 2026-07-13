@@ -68,6 +68,23 @@ describe('GET /api/reportes/por-unidad', () => {
       const callParams = pool.query.mock.calls[0][1];
       expect(callParams).toContain(202401);
     });
+
+    it('groupedBySubunidad es false por defecto', async () => {
+      pool.query.mockResolvedValueOnce({ rows: [] });
+
+      const res = await request(app).get('/api/reportes/por-unidad?qna=202401');
+
+      expect(res.body.groupedBySubunidad).toBe(false);
+    });
+
+    it('retorna array vacío cuando no hay datos para el qna', async () => {
+      pool.query.mockResolvedValueOnce({ rows: [] });
+
+      const res = await request(app).get('/api/reportes/por-unidad?qna=190001');
+
+      expect(res.status).toBe(200);
+      expect(res.body.data).toEqual([]);
+    });
   });
 
   describe('agrupación por subunidad', () => {
@@ -83,38 +100,117 @@ describe('GET /api/reportes/por-unidad', () => {
       expect(res.status).toBe(200);
       expect(res.body.groupedBySubunidad).toBe(true);
     });
+
+    it('NO agrupa por subunidad cuando subunidad != "true"', async () => {
+      pool.query.mockResolvedValueOnce({ rows: [] });
+
+      const res = await request(app).get('/api/reportes/por-unidad?qna=202401&subunidad=false');
+
+      expect(res.body.groupedBySubunidad).toBe(false);
+    });
+  });
+
+  describe('errores', () => {
+    it('retorna 500 cuando el pool lanza un error', async () => {
+      pool.query.mockRejectedValueOnce(new Error('DB error'));
+
+      const res = await request(app).get('/api/reportes/por-unidad?qna=202401');
+
+      expect(res.status).toBe(500);
+    });
   });
 });
 
 describe('GET /api/reportes/conceptos', () => {
-  it('retorna 200 con los datos de conceptos', async () => {
-    pool.query.mockResolvedValueOnce({
-      rows: [
-        { etiqueta: 'C-001 (P)', concepto: '001', perc_ded: 'P', total_importe: 500000 },
-        { etiqueta: 'C-002 (D)', concepto: '002', perc_ded: 'D', total_importe: 80000 },
-      ],
+  describe('sin filtros', () => {
+    it('retorna 200 con los datos de conceptos', async () => {
+      pool.query.mockResolvedValueOnce({
+        rows: [
+          { etiqueta: 'C-001 (P)', concepto: '001', perc_ded: 'P', total_importe: 500000 },
+          { etiqueta: 'C-002 (D)', concepto: '002', perc_ded: 'D', total_importe: 80000 },
+        ],
+      });
+
+      const res = await request(app).get('/api/reportes/conceptos');
+
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty('data');
+      expect(Array.isArray(res.body.data)).toBe(true);
     });
 
-    const res = await request(app).get('/api/reportes/conceptos');
+    it('los filtros son null cuando no se proporcionan', async () => {
+      pool.query.mockResolvedValueOnce({ rows: [] });
 
-    expect(res.status).toBe(200);
-    expect(res.body).toHaveProperty('data');
-    expect(Array.isArray(res.body.data)).toBe(true);
+      const res = await request(app).get('/api/reportes/conceptos');
+
+      expect(res.body.filters).toMatchObject({ qna_start: null, qna_end: null });
+    });
   });
 
-  it('retorna 400 si qna_start no es un entero válido', async () => {
-    const res = await request(app).get('/api/reportes/conceptos?qna_start=abc');
+  describe('validación de parámetros', () => {
+    it('retorna 400 si qna_start no es un entero válido', async () => {
+      const res = await request(app).get('/api/reportes/conceptos?qna_start=abc');
 
-    expect(res.status).toBe(400);
-    expect(res.body).toHaveProperty('error');
+      expect(res.status).toBe(400);
+      expect(res.body).toHaveProperty('error');
+    });
+
+    it('retorna 400 si qna_end no es un entero válido', async () => {
+      const res = await request(app).get('/api/reportes/conceptos?qna_end=xyz');
+
+      expect(res.status).toBe(400);
+      expect(res.body).toHaveProperty('error');
+    });
   });
 
-  it('acepta rango de quincenas con qna_start y qna_end', async () => {
-    pool.query.mockResolvedValueOnce({ rows: [] });
+  describe('con filtros de quincena', () => {
+    it('acepta rango de quincenas con qna_start y qna_end', async () => {
+      pool.query.mockResolvedValueOnce({ rows: [] });
 
-    const res = await request(app).get('/api/reportes/conceptos?qna_start=202401&qna_end=202412');
+      const res = await request(app).get('/api/reportes/conceptos?qna_start=202401&qna_end=202412');
 
-    expect(res.status).toBe(200);
-    expect(res.body.filters).toMatchObject({ qna_start: 202401, qna_end: 202412 });
+      expect(res.status).toBe(200);
+      expect(res.body.filters).toMatchObject({ qna_start: 202401, qna_end: 202412 });
+    });
+
+    it('acepta solo qna_start sin qna_end', async () => {
+      pool.query.mockResolvedValueOnce({ rows: [] });
+
+      const res = await request(app).get('/api/reportes/conceptos?qna_start=202401');
+
+      expect(res.status).toBe(200);
+      expect(res.body.filters.qna_start).toBe(202401);
+      expect(res.body.filters.qna_end).toBeNull();
+    });
+
+    it('acepta solo qna_end sin qna_start', async () => {
+      pool.query.mockResolvedValueOnce({ rows: [] });
+
+      const res = await request(app).get('/api/reportes/conceptos?qna_end=202412');
+
+      expect(res.status).toBe(200);
+      expect(res.body.filters.qna_start).toBeNull();
+      expect(res.body.filters.qna_end).toBe(202412);
+    });
+
+    it('pasa los parámetros enteros al pool', async () => {
+      pool.query.mockResolvedValueOnce({ rows: [] });
+
+      await request(app).get('/api/reportes/conceptos?qna_start=202401&qna_end=202412');
+
+      const callParams = pool.query.mock.calls[0][1];
+      expect(callParams).toContain(202401);
+      expect(callParams).toContain(202412);
+    });
+  });
+
+  describe('errores', () => {
+    it('retorna 500 cuando el pool lanza un error', async () => {
+      pool.query.mockRejectedValueOnce(new Error('DB error'));
+
+      const res = await request(app).get('/api/reportes/conceptos');
+
+      expect(res.status).toBe(500);
+    });
   });
 });
