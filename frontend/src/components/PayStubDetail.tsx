@@ -1,4 +1,5 @@
 import React from 'react';
+import { formatCurrency } from '../utils/formatters';
 import { useEmpleadoDetalle, useNominaDetalle } from '../api/client';
 import { useStore } from '../store/useStore';
 import { X, Printer, ShieldCheck } from 'lucide-react';
@@ -29,13 +30,7 @@ export const PayStubDetail: React.FC = () => {
     isError: errorNomina 
   } = useNominaDetalle(targetNumCons);
 
-  const formatCurrency = (val: number) => {
-    return new Intl.NumberFormat('es-MX', {
-      style: 'currency',
-      currency: 'MXN',
-      minimumFractionDigits: 2,
-    }).format(val);
-  };
+
 
   const handlePrint = () => {
     window.print();

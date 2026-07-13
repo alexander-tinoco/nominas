@@ -1,4 +1,5 @@
 import React from 'react';
+import { formatCurrency } from '../utils/formatters';
 import { 
   BarChart, 
   Bar, 
@@ -30,14 +31,7 @@ export const LeftBookPage: React.FC = () => {
     isError: errorConceptos 
   } = useReporteConceptos(selectedQna, selectedQna);
 
-  // Formatear moneda (ej. 1234567.89 -> $1,234,567.89)
-  const formatCurrency = (val: number) => {
-    return new Intl.NumberFormat('es-MX', {
-      style: 'currency',
-      currency: 'MXN',
-      minimumFractionDigits: 2,
-    }).format(val);
-  };
+
 
   // Formatear abreviado (ej. 1000000 -> $1.0M)
   const formatCompact = (val: number) => {
