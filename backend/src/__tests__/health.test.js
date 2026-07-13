@@ -1,5 +1,12 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import request from 'supertest';
+
+vi.mock('../config/db.js', () => ({
+  default: {
+    query: vi.fn(() => Promise.resolve({ rows: [{ test_val: 1 }] }))
+  }
+}));
+
 import app from '../app.js';
 
 describe('GET /health', () => {

@@ -1,6 +1,16 @@
+import * as Sentry from '@sentry/node';
 import env from './config/env.js';
 import app from './app.js';
 import { logger } from './middleware/logger.js';
+
+// Inicializar Sentry si existe la variable de entorno correspondiente
+if (env.SENTRY_DSN) {
+  Sentry.init({
+    dsn: env.SENTRY_DSN,
+    tracesSampleRate: 1.0,
+  });
+  logger.info('[Sentry] Monitoreo y rastreo de errores inicializado correctamente.');
+}
 
 const PORT = env.PORT;
 

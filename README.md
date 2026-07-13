@@ -19,28 +19,40 @@ Este repositorio contiene una solución completa de ingeniería de datos y desar
 
 ## Arquitectura del Sistema
 
-El siguiente diagrama muestra el flujo de datos y la relación entre los distintos módulos del ecosistema:
+El siguiente diagrama muestra el flujo de datos y la relación entre los distintos módulos del ecosistema, incluyendo la capa de caché con Redis, el monitoreo con Prometheus/Grafana y el seguimiento de excepciones con Sentry:
 
 ```mermaid
 graph TD
     subgraph Cliente
         A[Dashboard React + Vite]
+        S_Front[Sentry SDK React]
     end
     subgraph Servidor
         B[API REST Express]
         E[Swagger UI /api/docs]
+        S_Back[Sentry SDK Node]
     end
-    subgraph Almacenamiento
+    subgraph Almacenamiento_Caché
         C[(Base de Datos PostgreSQL 16)]
+        R[(Servidor Redis 7)]
+    end
+    subgraph Monitoreo
+        P[(Prometheus Server)]
+        G[Grafana Dashboards]
     end
     subgraph Procesamiento
         D[ETL Pipeline Python]
     end
 
     A -->|Peticiones HTTP/JSON| B
+    A -.->|Reporta errores| S_Front
     B -->|Consulta SQL| C
+    B <-->|Caché de reportes| R
+    B -.->|Reporta excepciones| S_Back
     E -->|Consulta Esquema| B
     D -->|Carga masiva SQL| C
+    P -->|Raspa /metrics| B
+    G -->|Muestra paneles| P
 ```
 
 ---
@@ -104,7 +116,7 @@ erDiagram
 
 * **Datos de acceso público:** Todos los endpoints expuestos en el backend son de solo lectura (métodos `GET`) y operan sobre información de nómina que es de carácter gubernamental público (SEP 2018).
 * **Ausencia de autenticación:** Al tratarse de datos abiertos y de libre consulta, no se implementó un mecanismo de autenticación en este proyecto.
-* **Escalabilidad de seguridad:** En caso de migrar a un entorno corporativo o con datos privados, se requeriría incorporar un middleware de autenticación (por ejemplo, JWT con OAuth2) y autorización basada en roles (RBAC) para restringir el acceso a los registros.
+* **Escalabilidad de seguridad:** En caso de migrar a un entorno corporativo o con datos privados, se requeriría incorporar un middleware de autenticación (por ejemplo, JWT con OAuth2) y autorización basada en roles (RBAC) para abrir endpoints de escritura de forma segura.
 
 ---
 
@@ -114,29 +126,32 @@ El proyecto está diseñado bajo una arquitectura modular y limpia:
 
 ```text
 nominas/
-├── docker-compose.yml         → Orquesta PostgreSQL, backend y frontend
+├── docker-compose.yml         → Orquesta PostgreSQL, Redis, Prometheus, Grafana, backend y frontend
+├── prometheus.yml             → Configura los intervalos de raspado de métricas para Prometheus
 ├── README.md                  → Esta guía general de inicio rápido
 ├── raw_data/                  → Almacena los archivos excel originales
 │
 ├── .github/
 │   ├── workflows/
-│   │   ├── ci.yml             → Pipeline CI: lint, typecheck, tests y build
+│   │   ├── ci.yml             → Pipeline CI: lint, typecheck, tests, scan de secretos y build
 │   │   └── cd.yml             → Pipeline CD: build Docker + push a GHCR
 │   ├── ISSUE_TEMPLATE/        → Plantillas para Bugs y Features
 │   └── PULL_REQUEST_TEMPLATE.md → Plantilla de revisión para PRs
 │
 ├── etl/                       → MÓDULO PYTHON (ETL)
-│   ├── etl_nomina.py          → Script ETL de producción parametrizado
+│   ├── etl_nomina.py          → Script ETL de producción parametrizado con índices SQL adicionales
 │   └── tests/                 → Pruebas unitarias de las transformaciones
 │
 ├── backend/                   → MÓDULO NODE.JS (API REST)
 │   ├── src/
 │   │   ├── controllers/       → Lógica de control y mapeo HTTP
-│   │   ├── services/          → Lógica de negocio y construcción de filtros
+│   │   ├── services/          → Lógica de negocio, filtros dinámicos y caché de Redis
 │   │   ├── repositories/      → Acceso y consultas directas SQL
-│   │   ├── routes/            → Definición de rutas Express
-│   │   ├── middleware/        → Logger (Pino) y manejador de errores
+│   │   ├── routes/            → Definición de rutas Express con rate-limiters específicos
+│   │   ├── middleware/        → Logger, error-handler, métricas y monitoreo
 │   │   ├── config/db.js       → Pool de conexiones PostgreSQL
+│   │   ├── config/env.js      → Validador estricto fail-fast de variables de entorno
+│   │   ├── config/redis.js    → Cliente y helpers de caché Redis
 │   │   ├── config/swagger.js  → Configuración de Swagger OpenAPI
 │   │   └── __tests__/         → Suite de tests (96 tests)
 │   ├── eslint.config.js       → Configuración de ESLint (Flat Config)
@@ -144,14 +159,14 @@ nominas/
 │   └── README.md              → Documentación detallada de endpoints
 │
 └── frontend/                  → MÓDULO REACT (DASHBOARD)
-    ├── src/                   → Vistas, componentes contables y hooks de react-query
+    ├── src/                   → Vistas, componentes, tracking de errores con Sentry
     ├── Dockerfile             → Imagen Nginx para producción
     └── README.md              → Guía de compilación del frontend
 ```
 
 ### Diagrama de Clases UML (Arquitectura de 3 Capas - Backend)
 
-El backend sigue estrictamente el principio de separación de responsabilidades a través de tres capas desacopladas, lo cual permite mockear fácilmente y testear de forma aislada:
+El backend sigue el principio de separación de responsabilidades a través de tres capas desacopladas, interactuando de manera resiliente con Redis y reportando excepciones no controladas a Sentry:
 
 ```mermaid
 classDiagram
@@ -174,14 +189,19 @@ classDiagram
         +findById(id)
         +findAndCount()
     }
-    class DB_Pool {
-        +query(sql, params)
+    class Redis_Cache {
+        +getCache(key)
+        +setCache(key, val, ttl)
+    }
+    class Sentry_SDK {
+        +setupExpressErrorHandler()
     }
 
     Router --> Controller : "Rutea a"
     Controller --> Service : "Invoca a"
-    Service --> Repository : "Consulta mediante"
-    Repository --> DB_Pool : "Ejecuta sobre"
+    Service --> Repository : "Consulta SQL"
+    Service <--> Redis_Cache : "Verifica/Guarda"
+    Controller --> Sentry_SDK : "Captura fallas"
 ```
 
 ---
@@ -201,6 +221,8 @@ El proyecto se configura dinámicamente mediante las siguientes variables de ent
 | `PGPASSWORD` | Contraseña de base de datos PostgreSQL | `postgres_password` |
 | `PGDATABASE` | Nombre de la base de datos | `nominas` |
 | `CORS_ORIGIN` | Orígenes CORS permitidos | `*` |
+| `REDIS_URL` | URL de conexión para el almacén de caché Redis | `redis://localhost:6379` |
+| `SENTRY_DSN` | DSN de Sentry para error tracking en producción | `""` |
 | `LOG_LEVEL` | Nivel mínimo para logger (Pino) | `info` |
 
 ### Frontend (`frontend/.env`)
@@ -208,12 +230,13 @@ El proyecto se configura dinámicamente mediante las siguientes variables de ent
 | Variable | Descripción | Valor por Defecto |
 |---|---|---|
 | `VITE_API_URL` | Endpoint base de la API REST del backend | `http://localhost:3000` |
+| `VITE_SENTRY_DSN` | DSN de Sentry para el dashboard React | `""` |
 
 ---
 
 ## Cómo Ejecutar con Docker (Recomendado)
 
-Puedes inicializar todo el ecosistema (Base de Datos + API REST + Dashboard Frontend) en segundo plano con un solo comando:
+Puedes inicializar todo el ecosistema (Base de Datos + Redis + Prometheus + Grafana + API REST + Dashboard Frontend) en segundo plano con un solo comando:
 
 ```bash
 docker compose up -d
@@ -223,8 +246,12 @@ docker compose up -d
 |---|---|
 | **Dashboard Frontend** | [http://localhost:80](http://localhost:80) |
 | **API REST Backend** | [http://localhost:3000](http://localhost:3000) |
-| **Documentación de API (Swagger)** | [http://localhost:3000/api/docs](http://localhost:3000/api/docs) |
+| **Swagger Docs** | [http://localhost:3000/api/docs](http://localhost:3000/api/docs) |
+| **Métricas (Prometheus compatible)** | [http://localhost:3000/metrics](http://localhost:3000/metrics) |
+| **Servidor Prometheus** | [http://localhost:9090](http://localhost:9090) |
+| **Paneles Grafana** (User: `admin` / Pwd: `admin`) | [http://localhost:3001](http://localhost:3001) |
 | **Base de Datos (PostgreSQL)** | `localhost:5433` |
+| **Servidor Redis** | `localhost:6379` |
 
 *Nota: Una vez levantado el entorno, debes ejecutar el ETL para poblar la base de datos (ver Paso 2 en la sección siguiente).*
 
@@ -234,7 +261,7 @@ docker compose up -d
 
 ### Diagrama de Secuencia UML (Proceso del ETL Pipeline)
 
-El ciclo de vida del pipeline ETL de Python (Extracción, Limpieza y Transformación en funciones puras y Carga en lotes) se ilustra en el siguiente diagrama:
+El ciclo de vida del pipeline ETL de Python (Extracción, Limpieza y Transformación en funciones puras y Carga en lotes con índices optimizados) se ilustra en el siguiente diagrama:
 
 ```mermaid
 sequenceDiagram
@@ -264,9 +291,9 @@ sequenceDiagram
 
 ### Instrucciones de ejecución local:
 
-#### 1. Levantar Base de Datos
+#### 1. Levantar Servicios Requeridos (BD y Redis)
 ```bash
-docker compose up -d db
+docker compose up -d db redis
 ```
 
 #### 2. Ejecutar Pipeline ETL (Python)
@@ -276,7 +303,7 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -r etl/requirements.txt
 
-# Correr el pipeline ETL (limpia, valida y carga 292k registros en ~35 segundos)
+# Correr el pipeline ETL (limpia, valida y carga 292k registros en ~35 segundos e indexa la base de datos)
 python etl/etl_nomina.py --mode initial --chunksize 10000
 ```
 
@@ -300,14 +327,15 @@ npm run dev
 
 A continuación se detallan las rutas principales expuestas por la API REST:
 
-* **`GET /health`** - Chequeo de estado de salud del sistema.
+* **`GET /health`** - Chequeo de estado de salud mejorado del sistema (DB status, uptime, uso de memoria).
+* **`GET /metrics`** - Exposición de métricas globales del sistema en formato Prometheus (peticiones HTTP, duración de respuestas).
 * **`GET /api/docs`** - Interfaz de documentación interactiva de Swagger/OpenAPI.
 * **`GET /api/empleados`** - Lista paginada y filtrable de empleados ordenados por nombre.
 * **`GET /api/empleados/:rfc`** - Historial detallado de recibos del empleado asociado a un RFC.
 * **`GET /api/nomina`** - Consulta estructurada de recibos de nómina con soporte de 32 filtros combinados y resumen de acumulados.
 * **`GET /api/nomina/:num_cons`** - Desglose de percepciones y deducciones de un recibo específico.
-* **`GET /api/reportes/por-unidad`** - Acumulados financieros agrupados por unidad y/o subunidad organizativa.
-* **`GET /api/reportes/conceptos`** - Sumatorias acumuladas globales para cada concepto de nómina.
+* **`GET /api/reportes/por-unidad`** - Acumulados financieros agrupados por unidad y/o subunidad (Cacheado en Redis con TTL de 10 min).
+* **`GET /api/reportes/conceptos`** - Sumatorias acumuladas globales para cada concepto de nómina (Cacheado en Redis con TTL de 10 min).
 
 ---
 

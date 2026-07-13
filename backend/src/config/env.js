@@ -33,6 +33,14 @@ const env = cleanEnv(process.env, {
     default: '*',
     desc: 'Orígenes web permitidos para el intercambio de recursos (CORS)',
   }),
+  REDIS_URL: str({
+    default: 'redis://localhost:6379',
+    desc: 'URL de conexión para el almacén de caché Redis',
+  }),
+  SENTRY_DSN: str({
+    default: '',
+    desc: 'DSN de Sentry para error tracking en producción',
+  }),
   LOG_LEVEL: str({
     default: 'info',
     choices: ['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'],

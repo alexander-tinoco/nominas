@@ -4,7 +4,7 @@
 import { vi } from 'vitest';
 
 const pool = {
-  query: vi.fn(),
+  query: vi.fn(() => Promise.resolve({ rows: [{ test_val: 1 }] })),
 };
 
 export default pool;
