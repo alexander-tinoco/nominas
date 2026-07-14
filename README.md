@@ -13,7 +13,10 @@ Este repositorio contiene una solución completa de ingeniería de datos y desar
 | **Documentación de API** | [![API Docs](https://img.shields.io/badge/OpenAPI-Swagger-green.svg)](http://localhost:3000/api/docs) |
 | **Licencia** | [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) |
 | **Docker** | [![Docker Compose](https://img.shields.io/badge/Docker-Compose-blue.svg)](#cómo-ejecutar-con-docker) |
-| **Cobertura de tests** | **98.76 % statements · 100 % funciones** |
+| **Calidad de Commits** | **Convencionales (Husky + Commitlint)** |
+| **Gobernanza** | **ADRs (docs/decisions) & Release-it** |
+| **Cobertura de tests (Backend)** | **100 % verde (97 tests unitarios)** |
+
 
 ---
 
@@ -129,7 +132,10 @@ nominas/
 ├── docker-compose.yml         → Orquesta PostgreSQL, Redis, Prometheus, Grafana, backend y frontend
 ├── prometheus.yml             → Configura los intervalos de raspado de métricas para Prometheus
 ├── README.md                  → Esta guía general de inicio rápido
-├── raw_data/                  → Almacena los archivos excel originales
+├── commitlint.config.js       → Reglas para validar mensajes de commits convencionales
+├── .release-it.json           → Configuración para la generación de releases, tags y changelogs
+├── .husky/                    → Hooks de Git (pre-commit y commit-msg) para control de calidad
+├── raw_data/                  → Almacena los archivos excel originales (excluidos del commit)
 │
 ├── .github/
 │   ├── workflows/
@@ -138,22 +144,27 @@ nominas/
 │   ├── ISSUE_TEMPLATE/        → Plantillas para Bugs y Features
 │   └── PULL_REQUEST_TEMPLATE.md → Plantilla de revisión para PRs
 │
+├── docs/                      → DOCUMENTACIÓN GENERAL
+│   └── decisions/             → Architecture Decision Records (ADRs) de diseño
+│
 ├── etl/                       → MÓDULO PYTHON (ETL)
-│   ├── etl_nomina.py          → Script ETL de producción parametrizado con índices SQL adicionales
+│   ├── etl_nomina.py          → Script ETL de producción (valida y carga en base de datos)
 │   └── tests/                 → Pruebas unitarias de las transformaciones
 │
 ├── backend/                   → MÓDULO NODE.JS (API REST)
+│   ├── migrations/            → Migraciones DDL versionadas de la base de datos (node-pg-migrate)
 │   ├── src/
 │   │   ├── controllers/       → Lógica de control y mapeo HTTP
 │   │   ├── services/          → Lógica de negocio, filtros dinámicos y caché de Redis
 │   │   ├── repositories/      → Acceso y consultas directas SQL
 │   │   ├── routes/            → Definición de rutas Express con rate-limiters específicos
-│   │   ├── middleware/        → Logger, error-handler, métricas y monitoreo
+│   │   ├── middleware/        → Logger, error-handler, métricas y validateRequest (Zod)
+│   │   ├── schemas/           → Esquemas de validación estricta de parámetros usando Zod
 │   │   ├── config/db.js       → Pool de conexiones PostgreSQL
 │   │   ├── config/env.js      → Validador estricto fail-fast de variables de entorno
 │   │   ├── config/redis.js    → Cliente y helpers de caché Redis
 │   │   ├── config/swagger.js  → Configuración de Swagger OpenAPI
-│   │   └── __tests__/         → Suite de tests (96 tests)
+│   │   └── __tests__/         → Suite de tests (97 tests con mocks de base de datos)
 │   ├── eslint.config.js       → Configuración de ESLint (Flat Config)
 │   ├── Dockerfile             → Imagen multi-stage para producción
 │   └── README.md              → Documentación detallada de endpoints
@@ -339,13 +350,25 @@ A continuación se detallan las rutas principales expuestas por la API REST:
 
 ---
 
+## Gobernanza, Calidad y Estabilidad
+
+El proyecto incorpora un ecosistema moderno para garantizar la calidad del código, versionado y control de despliegues:
+
+1. **Migraciones Versionadas**: La creación del esquema y los índices en PostgreSQL se encuentra separada del script ETL y es administrada por `node-pg-migrate` bajo `backend/migrations/`. El contenedor del backend las ejecuta automáticamente al iniciar.
+2. **Validación con Zod**: Todos los parámetros de query y de ruta (como `num_cons`) en los endpoints se validan rígidamente en tiempo de ejecución. Los errores se formatean en respuestas estandarizadas `400 Bad Request` para mejorar la seguridad y la consistencia.
+3. **Calidad de Commits (Git Hooks)**: Configurado con `husky` y `lint-staged`. Cada commit convencional es validado por `commitlint`, garantizando que se respete el estándar de commits convencionales. Adicionalmente, `lint-staged` corre linters (ESLint y Oxlint) y unit tests locales para evitar código inestable en el historial de Git.
+4. **Architecture Decision Records (ADRs)**: Se documentan las decisiones técnicas fundamentales del portafolio en `docs/decisions/` para transparentar supuestos de diseño y facilitar la incorporación de colaboradores.
+5. **Releases Automatizados**: Integra `release-it` para versionar la aplicación de manera semántica (`patch`, `minor`, `major`), actualizar el `CHANGELOG.md` automáticamente a partir de commits convencionales, crear tags de Git y publicar el release en GitHub.
+
+---
+
 ## Testing
 
 ### Backend (Vitest + Supertest)
 
 ```bash
 cd backend
-npm test               # Ejecutar los 96 tests una vez
+npm test               # Ejecutar los 97 tests una vez
 npm run test:watch     # Ejecutar tests en modo watch
 npm run test:coverage  # Generar reporte de cobertura de código
 ```
@@ -360,7 +383,8 @@ npm test               # Ejecutar los 7 tests de componentes
 ### ETL (Pytest)
 
 ```bash
-PYTHONPATH=. pytest etl/tests/ # Ejecutar los 5 tests de transformaciones
+cd etl
+PYTHONPATH=.. .venv/bin/pytest # Ejecutar los 5 tests de transformaciones
 ```
 
 ---
