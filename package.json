@@ -1,6 +1,6 @@
 {
   "name": "nominas",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "type": "module",
   "description": "Este repositorio contiene una solución completa de ingeniería de datos y desarrollo de software para procesar, consultar y visualizar la nómina pública de personal gubernamental/educativo (correspondiente a la quincena 06 de 2018 — segunda quincena de marzo de 2018).",
   "main": "index.js",
