@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { getEmpleados, getEmpleadoByRfc } from '../controllers/empleados.js';
-import { validateRequest } from '../middlewares/validate.js';
+import { validateRequest } from '../middleware/validate.js';
 import { getEmpleadosSchema } from '../schemas/nominaSchemas.js';
 
 const router = Router();

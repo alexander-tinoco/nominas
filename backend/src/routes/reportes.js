@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { getReportePorUnidad, getReporteConceptos } from '../controllers/reportes.js';
-import { validateRequest } from '../middlewares/validate.js';
+import { validateRequest } from '../middleware/validate.js';
 import { getReportePorUnidadSchema, getReporteConceptosSchema } from '../schemas/nominaSchemas.js';
 
 const router = Router();

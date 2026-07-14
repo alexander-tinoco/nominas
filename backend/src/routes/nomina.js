@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { getNominas, getNominaById, exportNominas } from '../controllers/nomina.js';
-import { validateRequest } from '../middlewares/validate.js';
+import { validateRequest } from '../middleware/validate.js';
 import { getNominaSchema, getNominaByIdSchema } from '../schemas/nominaSchemas.js';
 
 const router = Router();
