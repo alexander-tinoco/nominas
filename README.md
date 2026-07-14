@@ -264,7 +264,7 @@ docker compose up -d
 | **Base de Datos (PostgreSQL)** | `localhost:5433` |
 | **Servidor Redis** | `localhost:6379` |
 
-*Nota: Una vez levantado el entorno, debes ejecutar el ETL para poblar la base de datos (ver Paso 2 en la sección siguiente).*
+*Nota: Una vez levantado el entorno, debes ejecutar el ETL para poblar la base de datos (ver Paso 2 en la sección siguiente). Grafana viene pre-configurado con Prometheus como origen de datos y un Dashboard de producción llamado "Auditoría de Nóminas - NodeJS Metrics" cargado automáticamente.*
 
 ---
 
@@ -341,6 +341,14 @@ A continuación se detallan las rutas principales expuestas por la API REST:
 * **`GET /health`** - Chequeo de estado de salud mejorado del sistema (DB status, uptime, uso de memoria).
 * **`GET /metrics`** - Exposición de métricas globales del sistema en formato Prometheus (peticiones HTTP, duración de respuestas).
 * **`GET /api/docs`** - Interfaz de documentación interactiva de Swagger/OpenAPI.
+
+#### Documentación Interactiva con Swagger
+
+El backend expone la especificación OpenAPI de todos sus endpoints de forma interactiva en `/api/docs`:
+
+| Vista de Endpoints en Swagger | Detalle de Modelos y Parámetros |
+| :---: | :---: |
+| ![Swagger Endpoints](docs/images/swagger_docs_1.png) | ![Swagger Detalle](docs/images/swagger_docs_2.png) |
 * **`GET /api/empleados`** - Lista paginada y filtrable de empleados ordenados por nombre.
 * **`GET /api/empleados/:rfc`** - Historial detallado de recibos del empleado asociado a un RFC.
 * **`GET /api/nomina`** - Consulta estructurada de recibos de nómina con soporte de 32 filtros combinados y resumen de acumulados.
