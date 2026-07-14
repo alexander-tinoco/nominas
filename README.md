@@ -264,7 +264,13 @@ docker compose up -d
 | **Base de Datos (PostgreSQL)** | `localhost:5433` |
 | **Servidor Redis** | `localhost:6379` |
 
-*Nota: Una vez levantado el entorno, debes ejecutar el ETL para poblar la base de datos (ver Paso 2 en la sección siguiente). Grafana viene pre-configurado con Prometheus como origen de datos y un Dashboard de producción llamado "Auditoría de Nóminas - NodeJS Metrics" cargado automáticamente.*
+*Nota: Una vez levantado el entorno, debes ejecutar el ETL para poblar la base de datos (ver Paso 2 en la sección siguiente).*
+
+#### Monitoreo y Observabilidad con Prometheus y Grafana
+
+Grafana viene pre-configurado para conectarse a Prometheus y cargar de manera automática el dashboard de producción "Auditoría de Nóminas - NodeJS Metrics" para monitorear latencia, RPS, códigos de estado, CPU y memoria:
+
+![Grafana Dashboard](docs/images/grafana_dashboard.png)
 
 ---
 
