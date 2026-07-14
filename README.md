@@ -266,11 +266,17 @@ docker compose up -d
 
 *Nota: Una vez levantado el entorno, debes ejecutar el ETL para poblar la base de datos (ver Paso 2 en la sección siguiente).*
 
-#### Monitoreo y Observabilidad con Prometheus y Grafana
+#### Monitoreo, Observabilidad y Reporte de Excepciones
 
+##### Monitoreo con Prometheus y Grafana
 Grafana viene pre-configurado para conectarse a Prometheus y cargar de manera automática el dashboard de producción "Auditoría de Nóminas - NodeJS Metrics" para monitorear latencia, RPS, códigos de estado, CPU y memoria:
 
 ![Grafana Dashboard](docs/images/grafana_dashboard.png)
+
+##### Reporte de Excepciones con Sentry
+El proyecto integra Sentry tanto en el frontend como en el backend para reportar y dar seguimiento a errores no controlados en tiempo real en entornos de producción:
+
+![Sentry Dashboard](docs/images/sentry_dashboard.png)
 
 ---
 
