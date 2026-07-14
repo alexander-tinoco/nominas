@@ -1,5 +1,7 @@
 import { Router } from 'express';
 import { getReportePorUnidad, getReporteConceptos } from '../controllers/reportes.js';
+import { validateRequest } from '../middlewares/validate.js';
+import { getReportePorUnidadSchema, getReporteConceptosSchema } from '../schemas/nominaSchemas.js';
 
 const router = Router();
 
@@ -67,7 +69,7 @@ const router = Router();
  *       500:
  *         description: Error interno del servidor o de base de datos.
  */
-router.get('/por-unidad', getReportePorUnidad);
+router.get('/por-unidad', validateRequest(getReportePorUnidadSchema), getReportePorUnidad);
 
 /**
  * @openapi
@@ -129,6 +131,6 @@ router.get('/por-unidad', getReportePorUnidad);
  *       500:
  *         description: Error interno del servidor o de base de datos.
  */
-router.get('/conceptos', getReporteConceptos);
+router.get('/conceptos', validateRequest(getReporteConceptosSchema), getReporteConceptos);
 
 export default router;

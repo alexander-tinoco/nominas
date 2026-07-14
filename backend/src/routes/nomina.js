@@ -1,5 +1,7 @@
 import { Router } from 'express';
 import { getNominas, getNominaById, exportNominas } from '../controllers/nomina.js';
+import { validateRequest } from '../middlewares/validate.js';
+import { getNominaSchema, getNominaByIdSchema } from '../schemas/nominaSchemas.js';
 
 const router = Router();
 
@@ -201,7 +203,7 @@ const router = Router();
  *       500:
  *         description: Error interno del servidor o de base de datos.
  */
-router.get('/', getNominas);
+router.get('/', validateRequest(getNominaSchema), getNominas);
 
 /**
  * @openapi
@@ -263,7 +265,7 @@ router.get('/', getNominas);
  *       500:
  *         description: Error de base de datos o interno.
  */
-router.get('/export', exportNominas);
+router.get('/export', validateRequest(getNominaSchema), exportNominas);
 
 /**
  * @openapi
@@ -290,6 +292,6 @@ router.get('/export', exportNominas);
  *       500:
  *         description: Error interno del servidor o de base de datos.
  */
-router.get('/:num_cons', getNominaById);
+router.get('/:num_cons', validateRequest(getNominaByIdSchema), getNominaById);
 
 export default router;

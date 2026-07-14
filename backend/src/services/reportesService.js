@@ -15,7 +15,7 @@ export const getReportePorUnidad = async ({ qna, subunidad }) => {
     throw error;
   }
 
-  const includeSubunidad = subunidad === 'true';
+  const includeSubunidad = subunidad === true || subunidad === 'true';
 
   // Intentar recuperar de la caché
   const cacheKey = `reportes:unidad:${qnaInt}:${includeSubunidad}`;

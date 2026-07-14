@@ -98,84 +98,32 @@ def filter_orphans(df1, df2):
 
 def run_ddl(engine, mode):
     """
-    Crea las tablas en la base de datos.
-    Si el modo es 'initial', elimina las tablas existentes.
+    Verifica que el esquema de la base de datos exista (creado vía migraciones).
+    Si el modo es 'initial', trunca las tablas para permitir una carga limpia.
     """
+    from sqlalchemy import inspect
+    inspector = inspect(engine)
+    
+    required_tables = ["conceptos_catalogo", "nomina_registros", "nomina_conceptos"]
+    missing_tables = [table for table in required_tables if not inspector.has_table(table)]
+    
+    if missing_tables:
+        logger.error(f"Faltan las siguientes tablas en la base de datos: {missing_tables}")
+        raise RuntimeError(
+            "El esquema de base de datos no está inicializado. "
+            "Por favor ejecute las migraciones del backend con: npm run migrate:up"
+        )
+
     if mode == "initial":
-        logger.info("Modo 'initial' activo. Preparando para eliminar tablas anteriores...")
-        drop_ddl = """
-        DROP TABLE IF EXISTS nomina_conceptos CASCADE;
-        DROP TABLE IF EXISTS nomina_registros CASCADE;
-        DROP TABLE IF EXISTS conceptos_catalogo CASCADE;
+        logger.info("Modo 'initial' activo. Truncando tablas para una nueva carga limpia...")
+        truncate_ddl = """
+        TRUNCATE TABLE nomina_conceptos, nomina_registros, conceptos_catalogo RESTART IDENTITY CASCADE;
         """
         with engine.begin() as conn:
-            conn.execute(text(drop_ddl))
-        logger.info("Tablas anteriores eliminadas.")
-
-    create_ddl = """
-    CREATE TABLE IF NOT EXISTS conceptos_catalogo (
-        concepto VARCHAR(5) PRIMARY KEY
-    );
-
-    CREATE TABLE IF NOT EXISTS nomina_registros (
-        num_cons INT PRIMARY KEY,
-        rfc VARCHAR(13) NOT NULL,
-        nom_emp VARCHAR(100) NOT NULL,
-        ent_fed INT NOT NULL,
-        ct_clasif VARCHAR(5),
-        ct_id VARCHAR(5),
-        ct_secuencial INT,
-        ct_digito_ver VARCHAR(5),
-        cod_pago INT,
-        unidad INT,
-        subunidad INT,
-        cat_puesto VARCHAR(10),
-        horas INT,
-        cons_plaza INT,
-        nivel_sueldo INT,
-        mot_mov INT,
-        qna_ini INT NOT NULL,
-        qna_fin INT NOT NULL,
-        qna_pago INT NOT NULL,
-        tot_perc_cheque NUMERIC(15, 2) NOT NULL,
-        tot_ded_cheque NUMERIC(15, 2) NOT NULL,
-        tot_net_cheque NUMERIC(15, 2) NOT NULL
-    );
-
-    CREATE TABLE IF NOT EXISTS nomina_conceptos (
-        id SERIAL PRIMARY KEY,
-        num_cons INT NOT NULL,
-        perc_ded CHAR(1) NOT NULL,
-        concepto VARCHAR(5) NOT NULL,
-        importe NUMERIC(15, 2) NOT NULL,
-        qna_ini INT NOT NULL,
-        qna_fin INT NOT NULL,
-        CONSTRAINT fk_nomina_registros FOREIGN KEY (num_cons) REFERENCES nomina_registros(num_cons) ON DELETE CASCADE,
-        CONSTRAINT fk_conceptos_catalogo FOREIGN KEY (concepto) REFERENCES conceptos_catalogo(concepto)
-    );
-    """
-    
-    # Crear índices si no existen para optimizar el rendimiento de las consultas y búsquedas frecuentes
-    indices_ddl = """
-    -- Índices existentes para búsquedas y llaves foráneas
-    CREATE INDEX IF NOT EXISTS idx_registros_rfc ON nomina_registros (rfc);
-    CREATE INDEX IF NOT EXISTS idx_registros_qna_ini ON nomina_registros (qna_ini);
-    CREATE INDEX IF NOT EXISTS idx_registros_qna_fin ON nomina_registros (qna_fin);
-    CREATE INDEX IF NOT EXISTS idx_conceptos_num_cons ON nomina_conceptos (num_cons);
-    CREATE INDEX IF NOT EXISTS idx_conceptos_concepto ON nomina_conceptos (concepto);
-
-    -- Índices adicionales sugeridos por análisis de filtros dinámicos frecuentes
-    CREATE INDEX IF NOT EXISTS idx_registros_unidad ON nomina_registros (unidad);
-    CREATE INDEX IF NOT EXISTS idx_registros_cat_puesto ON nomina_registros (cat_puesto);
-    CREATE INDEX IF NOT EXISTS idx_registros_qna_pago ON nomina_registros (qna_pago);
-    CREATE INDEX IF NOT EXISTS idx_registros_unidad_subunidad ON nomina_registros (unidad, subunidad);
-    """
-
-    logger.info("Creando tablas si no existen...")
-    with engine.begin() as conn:
-        conn.execute(text(create_ddl))
-        conn.execute(text(indices_ddl))
-    logger.info("Estructura de tablas e índices lista en la base de datos.")
+            conn.execute(text(truncate_ddl))
+        logger.info("Tablas limpiadas exitosamente.")
+    else:
+        logger.info("Modo 'incremental' activo. Insertando nuevos registros sin limpiar tablas.")
 
 def main():
     args = parse_arguments()

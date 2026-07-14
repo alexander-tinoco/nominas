@@ -40,6 +40,7 @@ services:
     volumes:
       - ./backend:/app
       - /app/node_modules
+    command: sh -c "npm run migrate:up && npm run dev"
     environment:
       - PORT=3000
       - NODE_ENV=development
@@ -48,6 +49,7 @@ services:
       - PGUSER=postgres
       - PGPASSWORD=postgres_password
       - PGDATABASE=nominas
+      - DATABASE_URL=postgres://postgres:postgres_password@db:5432/nominas
       - CORS_ORIGIN=*
       - REDIS_URL=redis://redis:6379
     depends_on:

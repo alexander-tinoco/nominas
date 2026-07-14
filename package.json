@@ -1,0 +1,43 @@
+{
+  "name": "nominas",
+  "version": "1.0.0",
+  "description": "Este repositorio contiene una solución completa de ingeniería de datos y desarrollo de software para procesar, consultar y visualizar la nómina pública de personal gubernamental/educativo (correspondiente a la quincena 06 de 2018 — segunda quincena de marzo de 2018).",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "prepare": "husky",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "release": "release-it"
+  },
+  "lint-staged": {
+    "backend/**/*.js": [
+      "backend/node_modules/.bin/eslint --config backend/eslint.config.js",
+      "backend/node_modules/.bin/vitest run --config backend/vitest.config.js --passWithNoTests"
+    ],
+    "frontend/**/*.{ts,tsx}": [
+      "frontend/node_modules/.bin/oxlint",
+      "frontend/node_modules/.bin/vitest run --config frontend/vitest.config.js --passWithNoTests"
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/alexander-tinoco/nominas.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/alexander-tinoco/nominas/issues"
+  },
+  "homepage": "https://github.com/alexander-tinoco/nominas#readme",
+  "devDependencies": {
+    "@commitlint/cli": "^21.2.1",
+    "@commitlint/config-conventional": "^21.2.0",
+    "@release-it/conventional-changelog": "^11.0.1",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.8",
+    "release-it": "^20.2.1"
+  }
+}
