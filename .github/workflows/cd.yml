@@ -3,6 +3,9 @@ name: CD (Delivery)
 on:
   release:
     types: [published]
+  push:
+    tags:
+      - 'v*'
 
 # Permisos para escribir imágenes en GitHub Container Registry (ghcr.io)
 permissions:
