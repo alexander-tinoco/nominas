@@ -391,6 +391,12 @@ PYTHONPATH=.. .venv/bin/pytest # Ejecutar los 5 tests de transformaciones
 
 ## Características de Diseño Contable (Dashboard)
 
+### Capturas de Pantalla de la Interfaz
+
+| Vista Principal del Dashboard | Búsqueda Avanzada y Balances |
+| :---: | :---: |
+| ![Dashboard Principal](docs/images/dashboard_main.png) | ![Búsqueda Avanzada](docs/images/advanced_search.png) |
+
 ### Diagrama de Estados UML (Navegación y Estados en React)
 
 El flujo de estados y transiciones en la interfaz contable del frontend (dashboard) gestionada por Zustand se describe a continuación:
