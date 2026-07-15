@@ -7,18 +7,15 @@ export const validateRequest = (schema) => {
         params: req.params,
       });
 
-      // Asignar los datos parseados y transformados de vuelta al request de forma segura sin reasignar la raíz
-      if (validated.body !== undefined && req.body !== undefined) {
-        for (const key in req.body) delete req.body[key];
-        Object.assign(req.body, validated.body);
+      // Asignar los datos parseados y transformados de vuelta al request de forma segura
+      if (validated.body !== undefined) {
+        Object.defineProperty(req, 'body', { value: validated.body, writable: true, configurable: true, enumerable: true });
       }
-      if (validated.query !== undefined && req.query !== undefined) {
-        for (const key in req.query) delete req.query[key];
-        Object.assign(req.query, validated.query);
+      if (validated.query !== undefined) {
+        Object.defineProperty(req, 'query', { value: validated.query, writable: true, configurable: true, enumerable: true });
       }
-      if (validated.params !== undefined && req.params !== undefined) {
-        for (const key in req.params) delete req.params[key];
-        Object.assign(req.params, validated.params);
+      if (validated.params !== undefined) {
+        Object.defineProperty(req, 'params', { value: validated.params, writable: true, configurable: true, enumerable: true });
       }
 
       next();

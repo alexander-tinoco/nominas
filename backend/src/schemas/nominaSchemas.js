@@ -79,6 +79,7 @@ export const getNominaSchema = z.object({
     ct_id: z.string().optional(),
     ct_secuencial: stringOrNumberToCoercedInteger(),
     ct_digito_ver: z.string().optional(),
+    ct_search: z.string().optional(),
     qna_pago: stringOrNumberToCoercedInteger(),
     qna_pago_min: stringOrNumberToCoercedInteger(),
     qna_pago_max: stringOrNumberToCoercedInteger(),

@@ -32,7 +32,14 @@ export const metricsMiddleware = (req, res, next) => {
     const durationInSeconds = duration[0] + duration[1] / 1e9;
     
     // Obtener la ruta limpia (evitando ids específicos en el label de Prometheus)
-    const route = req.route ? req.route.path : req.path;
+    let route = 'unmatched';
+    if (req.route) {
+      const basePath = req.baseUrl || '';
+      route = `${basePath}${req.route.path}`.replace(/\/+/g, '/');
+      if (route.endsWith('/') && route.length > 1) {
+        route = route.slice(0, -1);
+      }
+    }
 
     httpRequestsTotal.labels(req.method, route, res.statusCode.toString()).inc();
     httpRequestDurationSeconds.labels(req.method, route, res.statusCode.toString()).observe(durationInSeconds);

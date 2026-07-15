@@ -52,6 +52,16 @@ def parse_arguments():
         default=5000,
         help="Tamaño de lote para la inserción en la base de datos."
     )
+    parser.add_argument(
+        "--backend-url",
+        default=os.getenv("BACKEND_URL", "http://localhost:3000"),
+        help="URL base del servidor backend."
+    )
+    parser.add_argument(
+        "--admin-token",
+        default=os.getenv("ADMIN_TOKEN", "admin_test_token"),
+        help="Token de administración para la invalidación de caché."
+    )
     return parser.parse_args()
 
 def clean_text_columns(df):
@@ -240,10 +250,25 @@ def main():
         logger.info(f"Carga de registros de detalle finalizada con éxito en {time.time()-t_start:.2f}s.")
 
         logger.info("=== PIPELINE ETL FINALIZADO CON ÉXITO ===")
+        invalidate_backend_cache(args.backend_url, args.admin_token)
 
     except Exception as e:
         logger.error("Fallo crítico en el pipeline ETL:", exc_info=True)
         sys.exit(1)
+
+def invalidate_backend_cache(backend_url, admin_token):
+    import requests
+    try:
+        url = f"{backend_url.rstrip('/')}/api/admin/cache/invalidate"
+        headers = {"x-admin-token": admin_token}
+        logger.info(f"Enviando solicitud de invalidación de caché a: {url}")
+        res = requests.post(url, headers=headers, timeout=10)
+        if res.status_code == 200:
+            logger.info("Caché del backend invalidada exitosamente.")
+        else:
+            logger.warning(f"No se pudo invalidar la caché del backend (Código HTTP: {res.status_code}): {res.text}")
+    except Exception as e:
+        logger.warning(f"Error al intentar invalidar la caché en el backend: {str(e)}")
 
 if __name__ == "__main__":
     main()

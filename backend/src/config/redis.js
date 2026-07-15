@@ -55,10 +55,19 @@ export const setCache = async (key, value, ttlSeconds = 600) => {
 export const invalidateCachePattern = async (pattern) => {
   if (!redisClient) return;
   try {
-    const keys = await redisClient.keys(pattern);
-    if (keys.length > 0) {
-      await redisClient.del(...keys);
-      logger.info(`[Redis] Caché invalidada para patrón "${pattern}". Claves eliminadas: ${keys.length}`);
+    let cursor = '0';
+    let totalDeleted = 0;
+    do {
+      const [newCursor, keys] = await redisClient.scan(cursor, 'MATCH', pattern, 'COUNT', 100);
+      cursor = newCursor;
+      if (keys && keys.length > 0) {
+        await redisClient.del(...keys);
+        totalDeleted += keys.length;
+      }
+    } while (cursor !== '0');
+
+    if (totalDeleted > 0) {
+      logger.info(`[Redis] Caché invalidada para patrón "${pattern}". Claves eliminadas: ${totalDeleted}`);
     }
   } catch (err) {
     logger.warn(`[Redis] Falló invalidar caché para patrón "${pattern}":`, err.message);

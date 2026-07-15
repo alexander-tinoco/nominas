@@ -1,0 +1,427 @@
+import React, { useState } from 'react';
+import { Download, Search, User, Home, FileText, DollarSign, Briefcase, ChevronDown, ChevronUp } from 'lucide-react';
+
+interface FiltrosFormProps {
+  advancedFilters: any;
+  handleFilterChange: (name: string, value: any) => void;
+  handleClearFilters: () => void;
+  handleAdvancedSearchSubmit: (e: React.FormEvent) => void;
+  handleExportCsv: () => void;
+  isExporting: boolean;
+}
+
+export const FiltrosForm: React.FC<FiltrosFormProps> = ({
+  advancedFilters,
+  handleFilterChange,
+  handleClearFilters,
+  handleAdvancedSearchSubmit,
+  handleExportCsv,
+  isExporting,
+}) => {
+  // Secciones colapsables de filtros
+  const [showPersonal, setShowPersonal] = useState(true);
+  const [showCT, setShowCT] = useState(false);
+  const [showConceptos, setShowConceptos] = useState(false);
+  const [showImportes, setShowImportes] = useState(false);
+  const [showPlaza, setShowPlaza] = useState(false);
+
+  return (
+    <form onSubmit={handleAdvancedSearchSubmit} className="bg-white/90 border border-accounting-indigo/15 p-4 rounded-sm shadow-sm flex flex-col gap-3">
+      
+      {/* 1. SECCIÓN: IDENTIFICACIÓN Y EDAD */}
+      <div className="border border-accounting-indigo/10 rounded-sm overflow-hidden">
+        <button
+          type="button"
+          onClick={() => setShowPersonal(!showPersonal)}
+          className="w-full bg-accounting-paper/30 px-3 py-2 flex items-center justify-between text-xs font-mono font-bold text-accounting-indigo hover:bg-accounting-paper/50"
+        >
+          <span className="flex items-center gap-1.5">
+            <User className="w-3.5 h-3.5" />
+            DATOS PERSONALES Y EDAD
+          </span>
+          {showPersonal ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+        </button>
+        {showPersonal && (
+          <div className="p-3 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 bg-white">
+            <div>
+              <label className="block font-mono text-[9px] uppercase tracking-wider text-accounting-graphite mb-1">Nombre o RFC</label>
+              <input
+                type="text"
+                value={advancedFilters.search || ''}
+                onChange={(e) => handleFilterChange('search', e.target.value)}
+                placeholder="Ej. GILBERTO"
+                className="w-full border border-accounting-indigo/20 rounded-sm px-2 py-1 text-xs focus:ring-1 focus:ring-accounting-green focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="block font-mono text-[9px] uppercase tracking-wider text-accounting-graphite mb-1">Entidad Fed. (Clave)</label>
+              <input
+                type="number"
+                value={advancedFilters.ent_fed || ''}
+                onChange={(e) => handleFilterChange('ent_fed', e.target.value)}
+                placeholder="Ej. 10"
+                className="w-full border border-accounting-indigo/20 rounded-sm px-2 py-1 text-xs focus:ring-1 focus:ring-accounting-green focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="block font-mono text-[9px] uppercase tracking-wider text-accounting-graphite mb-1">Edad Mínima</label>
+              <input
+                type="number"
+                value={advancedFilters.edad_min || ''}
+                onChange={(e) => handleFilterChange('edad_min', e.target.value)}
+                placeholder="Ej. 18"
+                className="w-full border border-accounting-indigo/20 rounded-sm px-2 py-1 text-xs focus:ring-1 focus:ring-accounting-green focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="block font-mono text-[9px] uppercase tracking-wider text-accounting-graphite mb-1">Edad Máxima</label>
+              <input
+                type="number"
+                value={advancedFilters.edad_max || ''}
+                onChange={(e) => handleFilterChange('edad_max', e.target.value)}
+                placeholder="Ej. 65"
+                className="w-full border border-accounting-indigo/20 rounded-sm px-2 py-1 text-xs focus:ring-1 focus:ring-accounting-green focus:outline-none"
+              />
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* 2. SECCIÓN: CENTRO DE TRABAJO Y ADSCRIPCIÓN */}
+      <div className="border border-accounting-indigo/10 rounded-sm overflow-hidden">
+        <button
+          type="button"
+          onClick={() => setShowCT(!showCT)}
+          className="w-full bg-accounting-paper/30 px-3 py-2 flex items-center justify-between text-xs font-mono font-bold text-accounting-indigo hover:bg-accounting-paper/50"
+        >
+          <span className="flex items-center gap-1.5">
+            <Home className="w-3.5 h-3.5" />
+            CENTRO DE TRABAJO Y ADSCRIPCIÓN
+          </span>
+          {showCT ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+        </button>
+        {showCT && (
+          <div className="p-3 bg-white flex flex-col gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="sm:col-span-2">
+                <label className="block font-mono text-[9px] uppercase tracking-wider text-accounting-graphite mb-1">Búsqueda General C.T. (Clave parcial)</label>
+                <input
+                  type="text"
+                  value={advancedFilters.ct_search || ''}
+                  onChange={(e) => handleFilterChange('ct_search', e.target.value)}
+                  placeholder="Ej. ES o 52"
+                  className="w-full border border-accounting-indigo/20 rounded-sm px-2 py-1 text-xs focus:ring-1 focus:ring-accounting-green focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="block font-mono text-[9px] uppercase tracking-wider text-accounting-graphite mb-1">Categoría Puesto</label>
+                <input
+                  type="text"
+                  value={advancedFilters.cat_puesto || ''}
+                  onChange={(e) => handleFilterChange('cat_puesto', e.target.value)}
+                  placeholder="Ej. E0281"
+                  className="w-full border border-accounting-indigo/20 rounded-sm px-2 py-1 text-xs focus:ring-1 focus:ring-accounting-green focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <div className="border-t border-dashed border-accounting-indigo/10 pt-2 grid grid-cols-2 sm:grid-cols-6 gap-3">
+              <div>
+                <label className="block font-mono text-[8px] uppercase tracking-wider text-accounting-graphite mb-1">C.T. Clasif</label>
+                <input
+                  type="text"
+                  value={advancedFilters.ct_clasif || ''}
+                  onChange={(e) => handleFilterChange('ct_clasif', e.target.value)}
+                  placeholder="Ej. E"
+                  className="w-full border border-accounting-indigo/20 rounded-sm px-2 py-1 text-xs focus:ring-1 focus:ring-accounting-green focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="block font-mono text-[8px] uppercase tracking-wider text-accounting-graphite mb-1">C.T. ID</label>
+                <input
+                  type="text"
+                  value={advancedFilters.ct_id || ''}
+                  onChange={(e) => handleFilterChange('ct_id', e.target.value)}
+                  placeholder="Ej. ES"
+                  className="w-full border border-accounting-indigo/20 rounded-sm px-2 py-1 text-xs focus:ring-1 focus:ring-accounting-green focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="block font-mono text-[8px] uppercase tracking-wider text-accounting-graphite mb-1">C.T. Secuencial</label>
+                <input
+                  type="number"
+                  value={advancedFilters.ct_secuencial || ''}
+                  onChange={(e) => handleFilterChange('ct_secuencial', e.target.value)}
+                  placeholder="52"
+                  className="w-full border border-accounting-indigo/20 rounded-sm px-2 py-1 text-xs focus:ring-1 focus:ring-accounting-green focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="block font-mono text-[8px] uppercase tracking-wider text-accounting-graphite mb-1">C.T. Dígito Ver.</label>
+                <input
+                  type="text"
+                  value={advancedFilters.ct_digito_ver || ''}
+                  onChange={(e) => handleFilterChange('ct_digito_ver', e.target.value)}
+                  placeholder="Ej. B"
+                  className="w-full border border-accounting-indigo/20 rounded-sm px-2 py-1 text-xs focus:ring-1 focus:ring-accounting-green focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="block font-mono text-[8px] uppercase tracking-wider text-accounting-graphite mb-1">Unidad</label>
+                <input
+                  type="number"
+                  value={advancedFilters.unidad || ''}
+                  onChange={(e) => handleFilterChange('unidad', e.target.value)}
+                  placeholder="15"
+                  className="w-full border border-accounting-indigo/20 rounded-sm px-2 py-1 text-xs focus:ring-1 focus:ring-accounting-green focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="block font-mono text-[8px] uppercase tracking-wider text-accounting-graphite mb-1">Subunidad</label>
+                <input
+                  type="number"
+                  value={advancedFilters.subunidad || ''}
+                  onChange={(e) => handleFilterChange('subunidad', e.target.value)}
+                  placeholder="4"
+                  className="w-full border border-accounting-indigo/20 rounded-sm px-2 py-1 text-xs focus:ring-1 focus:ring-accounting-green focus:outline-none"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* 3. SECCIÓN: CONCEPTOS DE NÓMINA */}
+      <div className="border border-accounting-indigo/10 rounded-sm overflow-hidden">
+        <button
+          type="button"
+          onClick={() => setShowConceptos(!showConceptos)}
+          className="w-full bg-accounting-paper/30 px-3 py-2 flex items-center justify-between text-xs font-mono font-bold text-accounting-indigo hover:bg-accounting-paper/50"
+        >
+          <span className="flex items-center gap-1.5">
+            <FileText className="w-3.5 h-3.5" />
+            CONCEPTOS ASOCIADOS (P/D)
+          </span>
+          {showConceptos ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+        </button>
+        {showConceptos && (
+          <div className="p-3 grid grid-cols-1 sm:grid-cols-4 gap-3 bg-white">
+            <div>
+              <label className="block font-mono text-[9px] uppercase tracking-wider text-accounting-graphite mb-1">Código Concepto</label>
+              <input
+                type="text"
+                value={advancedFilters.concepto || ''}
+                onChange={(e) => handleFilterChange('concepto', e.target.value)}
+                placeholder="Ej. 1 o 19"
+                className="w-full border border-accounting-indigo/20 rounded-sm px-2 py-1 text-xs focus:ring-1 focus:ring-accounting-green focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="block font-mono text-[9px] uppercase tracking-wider text-accounting-graphite mb-1">Tipo Movimiento</label>
+              <select
+                value={advancedFilters.concepto_tipo || ''}
+                onChange={(e) => handleFilterChange('concepto_tipo', e.target.value)}
+                className="w-full border border-accounting-indigo/20 rounded-sm px-2 py-1 text-xs focus:ring-1 focus:ring-accounting-green focus:outline-none bg-white font-sans"
+              >
+                <option value="">Cualquiera</option>
+                <option value="P">Percepción (+)</option>
+                <option value="D">Deducción (-)</option>
+              </select>
+            </div>
+            <div>
+              <label className="block font-mono text-[9px] uppercase tracking-wider text-accounting-graphite mb-1">Importe Mínimo ($)</label>
+              <input
+                type="number"
+                step="any"
+                value={advancedFilters.concepto_importe_min || ''}
+                onChange={(e) => handleFilterChange('concepto_importe_min', e.target.value)}
+                placeholder="Ej. 500"
+                className="w-full border border-accounting-indigo/20 rounded-sm px-2 py-1 text-xs focus:ring-1 focus:ring-accounting-green focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="block font-mono text-[9px] uppercase tracking-wider text-accounting-graphite mb-1">Importe Máximo ($)</label>
+              <input
+                type="number"
+                step="any"
+                value={advancedFilters.concepto_importe_max || ''}
+                onChange={(e) => handleFilterChange('concepto_importe_max', e.target.value)}
+                placeholder="Ej. 5000"
+                className="w-full border border-accounting-indigo/20 rounded-sm px-2 py-1 text-xs focus:ring-1 focus:ring-accounting-green focus:outline-none"
+              />
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* 4. SECCIÓN: IMPORTES Y CHEQUE */}
+      <div className="border border-accounting-indigo/10 rounded-sm overflow-hidden">
+        <button
+          type="button"
+          onClick={() => setShowImportes(!showImportes)}
+          className="w-full bg-accounting-paper/30 px-3 py-2 flex items-center justify-between text-xs font-mono font-bold text-accounting-indigo hover:bg-accounting-paper/50"
+        >
+          <span className="flex items-center gap-1.5">
+            <DollarSign className="w-3.5 h-3.5" />
+            IMPORTES TOTALES DEL RECIBO
+          </span>
+          {showImportes ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+        </button>
+        {showImportes && (
+          <div className="p-3 bg-white flex flex-col gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-3">
+              <div className="md:col-span-2">
+                <label className="block font-mono text-[9px] uppercase tracking-wider text-accounting-graphite mb-1">Líquido Neto Mín.</label>
+                <input
+                  type="number"
+                  value={advancedFilters.neto_min || ''}
+                  onChange={(e) => handleFilterChange('neto_min', e.target.value)}
+                  placeholder="Ej. 3000"
+                  className="w-full border border-accounting-indigo/20 rounded-sm px-2 py-1 text-xs focus:ring-1 focus:ring-accounting-green focus:outline-none"
+                />
+              </div>
+              <div className="md:col-span-2">
+                <label className="block font-mono text-[9px] uppercase tracking-wider text-accounting-graphite mb-1">Líquido Neto Máx.</label>
+                <input
+                  type="number"
+                  value={advancedFilters.neto_max || ''}
+                  onChange={(e) => handleFilterChange('neto_max', e.target.value)}
+                  placeholder="Ej. 15000"
+                  className="w-full border border-accounting-indigo/20 rounded-sm px-2 py-1 text-xs focus:ring-1 focus:ring-accounting-green focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="block font-mono text-[8px] uppercase tracking-wider text-accounting-graphite mb-1">Percep. Mín.</label>
+                <input
+                  type="number"
+                  value={advancedFilters.perc_min || ''}
+                  onChange={(e) => handleFilterChange('perc_min', e.target.value)}
+                  placeholder="Ej. 4000"
+                  className="w-full border border-accounting-indigo/20 rounded-sm px-2 py-1 text-xs focus:ring-1 focus:ring-accounting-green focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="block font-mono text-[8px] uppercase tracking-wider text-accounting-graphite mb-1">Deducc. Máx.</label>
+                <input
+                  type="number"
+                  value={advancedFilters.ded_max || ''}
+                  onChange={(e) => handleFilterChange('ded_max', e.target.value)}
+                  placeholder="Ej. 2000"
+                  className="w-full border border-accounting-indigo/20 rounded-sm px-2 py-1 text-xs focus:ring-1 focus:ring-accounting-green focus:outline-none"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* 5. SECCIÓN: PLAZA Y CONDICIONES */}
+      <div className="border border-accounting-indigo/10 rounded-sm overflow-hidden">
+        <button
+          type="button"
+          onClick={() => setShowPlaza(!showPlaza)}
+          className="w-full bg-accounting-paper/30 px-3 py-2 flex items-center justify-between text-xs font-mono font-bold text-accounting-indigo hover:bg-accounting-paper/50"
+        >
+          <span className="flex items-center gap-1.5">
+            <Briefcase className="w-3.5 h-3.5" />
+            CONDICIONES DE PLAZA
+          </span>
+          {showPlaza ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+        </button>
+        {showPlaza && (
+          <div className="p-3 grid grid-cols-1 sm:grid-cols-5 gap-3 bg-white">
+            <div>
+              <label className="block font-mono text-[9px] uppercase tracking-wider text-accounting-graphite mb-1">Nivel Sueldo Mín.</label>
+              <input
+                type="number"
+                value={advancedFilters.nivel_sueldo_min || ''}
+                onChange={(e) => handleFilterChange('nivel_sueldo_min', e.target.value)}
+                placeholder="Ej. 3"
+                className="w-full border border-accounting-indigo/20 rounded-sm px-2 py-1 text-xs focus:ring-1 focus:ring-accounting-green focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="block font-mono text-[9px] uppercase tracking-wider text-accounting-graphite mb-1">Nivel Sueldo Máx.</label>
+              <input
+                type="number"
+                value={advancedFilters.nivel_sueldo_max || ''}
+                onChange={(e) => handleFilterChange('nivel_sueldo_max', e.target.value)}
+                placeholder="Ej. 10"
+                className="w-full border border-accounting-indigo/20 rounded-sm px-2 py-1 text-xs focus:ring-1 focus:ring-accounting-green focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="block font-mono text-[9px] uppercase tracking-wider text-accounting-graphite mb-1">Horas Mínimas</label>
+              <input
+                type="number"
+                value={advancedFilters.horas_min || ''}
+                onChange={(e) => handleFilterChange('horas_min', e.target.value)}
+                placeholder="0"
+                className="w-full border border-accounting-indigo/20 rounded-sm px-2 py-1 text-xs focus:ring-1 focus:ring-accounting-green focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="block font-mono text-[9px] uppercase tracking-wider text-accounting-graphite mb-1">Horas Máximas</label>
+              <input
+                type="number"
+                value={advancedFilters.horas_max || ''}
+                onChange={(e) => handleFilterChange('horas_max', e.target.value)}
+                placeholder="40"
+                className="w-full border border-accounting-indigo/20 rounded-sm px-2 py-1 text-xs focus:ring-1 focus:ring-accounting-green focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="block font-mono text-[9px] uppercase tracking-wider text-accounting-graphite mb-1">Motivo Mov.</label>
+              <input
+                type="number"
+                value={advancedFilters.mot_mov || ''}
+                onChange={(e) => handleFilterChange('mot_mov', e.target.value)}
+                placeholder="Ej. 10"
+                className="w-full border border-accounting-indigo/20 rounded-sm px-2 py-1 text-xs focus:ring-1 focus:ring-accounting-green focus:outline-none"
+              />
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* BOTONES DE ACCIÓN */}
+      <div className="flex gap-2 justify-end mt-2 pt-2 border-t border-accounting-indigo/10 dark:border-zinc-800">
+        <button
+          type="button"
+          onClick={handleExportCsv}
+          disabled={isExporting}
+          className="
+            mr-auto px-3 py-1.5 bg-accounting-green dark:bg-emerald-700 text-white font-sans text-xs rounded-sm font-semibold flex items-center gap-1
+            hover:bg-accounting-green/90 dark:hover:bg-emerald-600 disabled:opacity-50 transition-colors focus:ring-1 focus:ring-accounting-green focus:outline-none
+          "
+          aria-label="Exportar todos los registros contables filtrados a formato CSV"
+        >
+          <Download className="w-3.5 h-3.5" aria-hidden="true" />
+          <span>{isExporting ? 'Exportando...' : 'Exportar CSV'}</span>
+        </button>
+        <button
+          type="button"
+          onClick={handleClearFilters}
+          className="
+            px-3 py-1.5 bg-accounting-paper dark:bg-zinc-800 text-accounting-indigo dark:text-zinc-200 font-sans text-xs rounded-sm font-semibold border border-accounting-indigo/20 dark:border-zinc-700
+            hover:bg-accounting-paper/85 dark:hover:bg-zinc-750 transition-colors focus:ring-1 focus:ring-accounting-green focus:outline-none
+          "
+          aria-label="Limpiar filtros seleccionados"
+        >
+          Limpiar Filtros
+        </button>
+        <button
+          type="submit"
+          className="
+            px-5 py-1.5 bg-accounting-indigo dark:bg-zinc-700 text-accounting-paper dark:text-zinc-100 font-sans text-xs rounded-sm font-semibold flex items-center gap-1
+            hover:bg-accounting-indigo/90 dark:hover:bg-zinc-660 focus:ring-1 focus:ring-accounting-green focus:outline-none transition-colors
+          "
+          aria-label="Filtrar libros contables"
+        >
+          <Search className="w-3.5 h-3.5" aria-hidden="true" />
+          Filtrar Libros
+        </button>
+      </div>
+    </form>
+  );
+};

@@ -18,7 +18,14 @@ RUN npm run build
 
 # Stage 4: Production Runtime (Nginx)
 FROM nginx:alpine AS production
-COPY --from=builder /app/dist /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-EXPOSE 80
+
+RUN touch /var/run/nginx.pid && \
+    chown -R nginx:nginx /var/run/nginx.pid /var/cache/nginx /var/log/nginx /etc/nginx/conf.d
+
+USER nginx
+
+COPY --chown=nginx:nginx --from=builder /app/dist /usr/share/nginx/html
+COPY --chown=nginx:nginx nginx.conf /etc/nginx/conf.d/default.conf
+
+EXPOSE 8080
 CMD ["nginx", "-g", "daemon off;"]
