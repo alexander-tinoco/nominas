@@ -1,7 +1,7 @@
 import React from 'react';
 import { formatCurrency } from '../../../utils/formatters';
 
-import { NominaRegistro } from '../../../api/client';
+import type { NominaRegistro } from '../../../api/client';
 
 interface TablaResultadosProps {
   data: NominaRegistro[];
