@@ -1,19 +1,7 @@
 import React from 'react';
 import { formatCurrency } from '../../../utils/formatters';
 
-interface NominaRegistro {
-  num_cons: number;
-  rfc: string;
-  nom_emp: string;
-  unidad: number;
-  subunidad: number;
-  ct_clasif: string;
-  ct_id: string;
-  ct_secuencial: number;
-  edad: number | null;
-  tot_net_cheque: number;
-  qna_pago: number;
-}
+import { NominaRegistro } from '../../../api/client';
 
 interface TablaResultadosProps {
   data: NominaRegistro[];
