@@ -417,6 +417,10 @@ PYTHONPATH=.. .venv/bin/pytest # Ejecutar los 5 tests de transformaciones
 | :---: | :---: |
 | ![Dashboard Principal](docs/images/dashboard_main.png) | ![Búsqueda Avanzada](docs/images/advanced_search.png) |
 
+| Vista Detalle de Recibo | Vista Impresión PDF | Dashboard en Modo Oscuro |
+| :---: | :---: | :---: |
+| ![Vista Detalle de Recibo](docs/images/recibo_detalle.png) | ![Vista Impresión PDF](docs/images/recibo_impresion.png) | ![Dashboard en Modo Oscuro](docs/images/dashboard_dark.png) |
+
 ### Diagrama de Estados UML (Navegación y Estados en React)
 
 El flujo de estados y transiciones en la interfaz contable del frontend (dashboard) gestionada por Zustand se describe a continuación:
