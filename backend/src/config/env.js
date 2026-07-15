@@ -22,7 +22,7 @@ const env = cleanEnv(process.env, {
     desc: 'Nombre del usuario administrador de PostgreSQL',
   }),
   PGPASSWORD: str({
-    default: 'postgres_password',
+    ...(process.env.NODE_ENV === 'production' ? {} : { default: 'postgres_password' }),
     desc: 'Contraseña para la autenticación en PostgreSQL',
   }),
   PGDATABASE: str({
@@ -45,6 +45,10 @@ const env = cleanEnv(process.env, {
     default: 'info',
     choices: ['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'],
     desc: 'Nivel mínimo de logger estructurado Pino',
+  }),
+  ADMIN_TOKEN: str({
+    ...(process.env.NODE_ENV === 'production' ? {} : { default: 'admin_test_token' }),
+    desc: 'Token de administración para invalidar caché',
   }),
 });
 

@@ -17,9 +17,10 @@ RUN npm ci --only=production
 # Stage 4: Production Runtime
 FROM node:20-alpine AS production
 WORKDIR /app
-COPY --from=prod-deps /app/node_modules ./node_modules
-COPY package*.json ./
-COPY src/ ./src/
+COPY --chown=node:node --from=prod-deps /app/node_modules ./node_modules
+COPY --chown=node:node package*.json ./
+COPY --chown=node:node src/ ./src/
 EXPOSE 3000
 ENV NODE_ENV=production
+USER node
 CMD ["npm", "run", "start"]

@@ -13,6 +13,7 @@ import { metricsMiddleware, metricsEndpoint } from './middleware/metrics.js';
 import empleadosRoutes from './routes/empleados.js';
 import nominaRoutes from './routes/nomina.js';
 import reportesRoutes from './routes/reportes.js';
+import adminRoutes from './routes/admin.js';
 import { setupSwagger } from './config/swagger.js';
 
 const app = express();
@@ -109,6 +110,7 @@ app.get('/metrics', metricsEndpoint);
 app.use('/api/empleados', generalLimiter, empleadosRoutes);
 app.use('/api/nomina', nominaLimiter, nominaRoutes);
 app.use('/api/reportes', reportesLimiter, reportesRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Manejador de errores de Sentry (debe ir antes de nuestro errorHandler personalizado)
 if (env.SENTRY_DSN) {
