@@ -34,7 +34,7 @@ Login exitoso — respuesta real (`POST /api/auth/login`):
 
 ```
 HTTP/1.1 200 OK
-Set-Cookie: token=eyJhbGciOiJIUzI1NiIs...; Max-Age=7200; Path=/; HttpOnly; SameSite=Lax
+Set-Cookie: token=<JWT-omitido-por-seguridad>; Max-Age=7200; Path=/; HttpOnly; SameSite=Lax
 Content-Type: application/json; charset=utf-8
 
 {"usuario":{"id":1,"email":"admin@nominas.local","rol":"admin","nombre":"Administrador Demo"}}
@@ -122,7 +122,7 @@ HTTP/1.1 429 Too Many Requests
 |---|---|---|
 | Login | `{"req":{"method":"POST","url":"/api/auth/login","body":{"email":"admin@nominas.local","password":"Practica2026Admin!"}}}` | `{"req":{"method":"POST","url":"/api/auth/login"},"res":{"statusCode":200}}` |
 | Auditoría de perfil | `{"evento":"perfil_actualizado","detalle":{"campo":"password","valor_anterior":"hash-viejo","valor_nuevo":"hash-nuevo"}}` | `limpiarDetalle()` elimina cualquier clave `password`/`token`/`cookie` antes de persistir — nunca se registra un hash ni un JWT |
-| Sesión | `Cookie: token=eyJhbGci...` visible en el log de cada request | `redact: ['req.headers.cookie', ...]` → `"[REDACTADO]"` |
+| Sesión | `Cookie: token=<JWT-omitido>` visible en el log de cada request | `redact: ['req.headers.cookie', ...]` → `"[REDACTADO]"` |
 
 La columna "inseguro" es ilustrativa (muestra qué pasaría sin las protecciones); la columna "seguro" es la salida real del sistema.
 
