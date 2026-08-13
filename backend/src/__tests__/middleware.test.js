@@ -3,6 +3,16 @@ import request from 'supertest';
 
 vi.mock('../config/db.js', () => ({ default: { query: vi.fn() } }));
 
+// Estas pruebas cubren errorHandler/logger, no autenticación (ver auth.test.js
+// para 401/403), así que se deja pasar cualquier petición ya autenticada.
+vi.mock('../middleware/auth.js', () => ({
+  requireAuth: (req, res, next) => {
+    req.user = { sub: 2, email: 'usuario@nominas.local', rol: 'usuario' };
+    next();
+  },
+  requireRole: () => (req, res, next) => next(),
+}));
+
 import app from '../app.js';
 import pool from '../config/db.js';
 
