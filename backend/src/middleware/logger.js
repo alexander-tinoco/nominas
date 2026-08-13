@@ -28,6 +28,11 @@ const loggerMiddleware = pinoHttp({
     }),
     err: pino.stdSerializers.err,
   },
+  // Nunca registrar credenciales, cookies de sesión ni cabeceras de autorización (Práctica 3)
+  redact: {
+    paths: ['req.headers.cookie', 'req.headers.authorization', 'req.body.password', 'res.headers["set-cookie"]'],
+    censor: '[REDACTADO]',
+  },
 });
 
 export default loggerMiddleware;
