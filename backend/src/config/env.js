@@ -50,6 +50,14 @@ const env = cleanEnv(process.env, {
     ...(process.env.NODE_ENV === 'production' ? {} : { default: 'admin_test_token' }),
     desc: 'Token de administración para invalidar caché',
   }),
+  JWT_SECRET: str({
+    ...(process.env.NODE_ENV === 'production' ? {} : { default: 'dev_jwt_secret_no_usar_en_produccion' }),
+    desc: 'Clave secreta para firmar y verificar los JWT de sesión',
+  }),
+  JWT_EXPIRES_IN: str({
+    default: '2h',
+    desc: 'Tiempo de expiración del JWT de sesión',
+  }),
 });
 
 export default env;
