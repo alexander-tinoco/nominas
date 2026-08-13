@@ -117,9 +117,11 @@ erDiagram
 
 ## Seguridad y acceso a los datos
 
-* **Datos de acceso público:** Todos los endpoints expuestos en el backend son de solo lectura (métodos `GET`) y operan sobre información de nómina que es de carácter gubernamental público (SEP 2018).
-* **Ausencia de autenticación:** Al tratarse de datos abiertos y de libre consulta, no se implementó un mecanismo de autenticación en este proyecto.
-* **Escalabilidad de seguridad:** En caso de migrar a un entorno corporativo o con datos privados, se requeriría incorporar un middleware de autenticación (por ejemplo, JWT con OAuth2) y autorización basada en roles (RBAC) para abrir endpoints de escritura de forma segura.
+* **Autenticación con JWT:** el acceso al visor requiere iniciar sesión. El login entrega un JWT en una cookie `httpOnly` (sin estado en servidor) y todas las rutas de `/api/empleados`, `/api/nomina` y `/api/reportes` exigen sesión iniciada.
+* **Roles:** existen dos roles, `admin` y `usuario`. Las rutas administrativas (`/api/admin/*`, incluida la bitácora de seguridad) requieren rol `admin`.
+* **Protección contra fuerza bruta:** tras 5 intentos fallidos de login en 15 minutos la cuenta queda bloqueada temporalmente (contador en Redis), además del rate-limiting general por IP.
+* **Logs de seguridad:** cada login (exitoso/fallido), cierre de sesión, acceso no autorizado, acceso denegado por rol y cambio de perfil se registra en la tabla `logs_seguridad` con nivel de severidad (`INFO`/`WARNING`/`ERROR`/`DEBUG`), sin exponer nunca contraseñas ni tokens en los logs.
+* **Detalle y evidencia:** el diseño completo está documentado en [`docs/decisions/0004-autenticacion-jwt-y-logs-seguridad.md`](docs/decisions/0004-autenticacion-jwt-y-logs-seguridad.md) (que reemplaza la decisión original de no tener autenticación, [`docs/decisions/0001-sin-autenticacion.md`](docs/decisions/0001-sin-autenticacion.md)), con evidencia práctica en [`docs/evidencias-practicas-logs.md`](docs/evidencias-practicas-logs.md).
 
 ---
 
@@ -164,7 +166,8 @@ nominas/
 │   │   ├── config/env.js      → Validador estricto fail-fast de variables de entorno
 │   │   ├── config/redis.js    → Cliente y helpers de caché Redis
 │   │   ├── config/swagger.js  → Configuración de Swagger OpenAPI
-│   │   └── __tests__/         → Suite de tests (97 tests con mocks de base de datos)
+│   │   ├── utils/             → Firma/verificación de JWT y logger de eventos de seguridad
+│   │   └── __tests__/         → Suite de tests (117 tests con mocks de base de datos)
 │   ├── eslint.config.js       → Configuración de ESLint (Flat Config)
 │   ├── Dockerfile             → Imagen multi-stage para producción
 │   └── README.md              → Documentación detallada de endpoints
@@ -235,6 +238,8 @@ El proyecto se configura dinámicamente mediante las siguientes variables de ent
 | `REDIS_URL` | URL de conexión para el almacén de caché Redis | `redis://localhost:6379` |
 | `SENTRY_DSN` | DSN de Sentry para error tracking en producción | `""` |
 | `LOG_LEVEL` | Nivel mínimo para logger (Pino) | `info` |
+| `JWT_SECRET` | Clave secreta para firmar y verificar los JWT de sesión | *(requerida en producción)* |
+| `JWT_EXPIRES_IN` | Tiempo de expiración del JWT de sesión | `2h` |
 
 ### Frontend (`frontend/.env`)
 
@@ -353,6 +358,11 @@ A continuación se detallan las rutas principales expuestas por la API REST:
 * **`GET /health`** - Chequeo de estado de salud mejorado del sistema (DB status, uptime, uso de memoria).
 * **`GET /metrics`** - Exposición de métricas globales del sistema en formato Prometheus (peticiones HTTP, duración de respuestas).
 * **`GET /api/docs`** - Interfaz de documentación interactiva de Swagger/OpenAPI.
+* **`POST /api/auth/login`** - Inicia sesión y entrega un JWT en cookie `httpOnly` (público, con rate-limiting estricto y bloqueo tras 5 intentos fallidos).
+* **`POST /api/auth/logout`** - Cierra la sesión actual.
+* **`GET /api/auth/me`** - Devuelve el usuario autenticado.
+* **`PATCH /api/auth/profile`** - Actualiza `nombre` o `email` propio y audita el cambio.
+* **`GET /api/admin/logs-seguridad`** - Consulta la bitácora de eventos de seguridad (requiere rol `admin`).
 
 #### Documentación Interactiva con Swagger
 
@@ -361,6 +371,9 @@ El backend expone la especificación OpenAPI de todos sus endpoints de forma int
 | Vista de Endpoints en Swagger | Detalle de Modelos y Parámetros |
 | :---: | :---: |
 | ![Swagger Endpoints](docs/images/swagger_docs_1.png) | ![Swagger Detalle](docs/images/swagger_docs_2.png) |
+
+Las siguientes rutas requieren sesión iniciada (cualquier rol):
+
 * **`GET /api/empleados`** - Lista paginada y filtrable de empleados ordenados por nombre.
 * **`GET /api/empleados/:rfc`** - Historial detallado de recibos del empleado asociado a un RFC.
 * **`GET /api/nomina`** - Consulta estructurada de recibos de nómina con soporte de 32 filtros combinados y resumen de acumulados.
@@ -388,7 +401,7 @@ El proyecto incorpora un ecosistema moderno para garantizar la calidad del códi
 
 ```bash
 cd backend
-npm test               # Ejecutar los 97 tests una vez
+npm test               # Ejecutar los 117 tests una vez
 npm run test:watch     # Ejecutar tests en modo watch
 npm run test:coverage  # Generar reporte de cobertura de código
 ```
@@ -397,7 +410,7 @@ npm run test:coverage  # Generar reporte de cobertura de código
 
 ```bash
 cd frontend
-npm test               # Ejecutar los 7 tests de componentes
+npm test               # Ejecutar los 18 tests de componentes
 ```
 
 ### ETL (Pytest)
@@ -420,6 +433,16 @@ PYTHONPATH=.. .venv/bin/pytest # Ejecutar los 5 tests de transformaciones
 | Vista Detalle de Recibo | Vista Impresión PDF | Dashboard en Modo Oscuro |
 | :---: | :---: | :---: |
 | ![Vista Detalle de Recibo](docs/images/recibo_detalle.png) | ![Vista Impresión PDF](docs/images/recibo_impresion.png) | ![Dashboard en Modo Oscuro](docs/images/dashboard_dark.png) |
+
+### Autenticación y Roles
+
+| Pantalla de Login | Error de Credenciales Inválidas |
+| :---: | :---: |
+| ![Pantalla de Login](docs/images/login-vacio.png) | ![Credenciales Inválidas](docs/images/login-credenciales-invalidas.png) |
+
+| Dashboard como Admin (con bitácora de seguridad) | Dashboard como Usuario (sin panel de admin) |
+| :---: | :---: |
+| ![Dashboard Admin](docs/images/dashboard-admin.png) | ![Dashboard Usuario](docs/images/dashboard-usuario-sin-panel-admin.png) |
 
 ### Diagrama de Estados UML (Navegación y Estados en React)
 
