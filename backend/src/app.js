@@ -1,10 +1,12 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
 import rateLimit from 'express-rate-limit';
 import * as Sentry from '@sentry/node';
 import loggerMiddleware from './middleware/logger.js';
 import errorHandler from './middleware/errorHandler.js';
+import { requireAuth, requireRole } from './middleware/auth.js';
 import env from './config/env.js';
 import pool from './config/db.js';
 import { metricsMiddleware, metricsEndpoint } from './middleware/metrics.js';
@@ -14,6 +16,7 @@ import empleadosRoutes from './routes/empleados.js';
 import nominaRoutes from './routes/nomina.js';
 import reportesRoutes from './routes/reportes.js';
 import adminRoutes from './routes/admin.js';
+import authRoutes from './routes/auth.js';
 import { setupSwagger } from './config/swagger.js';
 
 const app = express();
@@ -38,8 +41,13 @@ app.use(helmet({
 }));
 
 // 2. Configurar CORS (Orígenes cruzados restringidos a CORS_ORIGIN)
+// Con autenticación basada en cookies, el navegador exige credentials:true
+// y un origen explícito (nunca "*") en la respuesta. Si CORS_ORIGIN="*",
+// se refleja dinámicamente el origen de la petición (origin: true) en vez
+// de enviar el comodín literal, que los navegadores rechazan junto a cookies.
 app.use(cors({
-  origin: env.CORS_ORIGIN,
+  origin: env.CORS_ORIGIN === '*' ? true : env.CORS_ORIGIN,
+  credentials: true,
   optionsSuccessStatus: 200
 }));
 
@@ -71,8 +79,20 @@ const reportesLimiter = rateLimit({
   message: { error: 'Límite de generación de reportes excedido desde esta IP, por favor espere 15 minutos.' }
 });
 
+// Limitador estricto para login (mitigar fuerza bruta, además del bloqueo por usuario)
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Demasiados intentos de autenticación desde esta IP, por favor intente de nuevo en 15 minutos.' }
+});
+
 // Parsear cuerpo JSON
 app.use(express.json());
+
+// Parsear cookies (necesario para leer el JWT de sesión httpOnly)
+app.use(cookieParser());
 
 // Registrar logs estructurados para cada petición HTTP (Pino-HTTP)
 app.use(loggerMiddleware);
@@ -106,11 +126,19 @@ app.get('/health', async (req, res) => {
 // Endpoint para exponer métricas compatibles con Prometheus
 app.get('/metrics', metricsEndpoint);
 
-// Rutas de la API con sus respectivos limitadores de tasa aplicados
-app.use('/api/empleados', generalLimiter, empleadosRoutes);
-app.use('/api/nomina', nominaLimiter, nominaRoutes);
-app.use('/api/reportes', reportesLimiter, reportesRoutes);
-app.use('/api/admin', adminRoutes);
+// Autenticación (login público con su propio limitador; el resto de sub-rutas exige sesión)
+app.use('/api/auth', authLimiter, authRoutes);
+
+// Rutas de la API con sus respectivos limitadores de tasa aplicados.
+// Requieren sesión iniciada (cualquier rol); las peticiones sin cookie válida
+// quedan registradas como acceso no autorizado (Práctica 1 y 5).
+app.use('/api/empleados', generalLimiter, requireAuth, empleadosRoutes);
+app.use('/api/nomina', nominaLimiter, requireAuth, nominaRoutes);
+app.use('/api/reportes', reportesLimiter, requireAuth, reportesRoutes);
+
+// Rutas administrativas: exigen sesión Y rol admin (el endpoint de caché
+// además conserva su propio token x-admin-token como segunda capa)
+app.use('/api/admin', requireAuth, requireRole('admin'), adminRoutes);
 
 // Manejador de errores de Sentry (debe ir antes de nuestro errorHandler personalizado)
 if (env.SENTRY_DSN) {
