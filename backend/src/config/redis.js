@@ -74,4 +74,32 @@ export const invalidateCachePattern = async (pattern) => {
   }
 };
 
+/**
+ * Helper para incrementar un contador atómicamente y asegurar su expiración (TTL).
+ * Se usa para llevar el conteo de intentos fallidos de autenticación (Práctica 2).
+ * Devuelve el valor del contador tras el incremento, o null si Redis no está disponible.
+ */
+export const incrementWithTTL = async (key, ttlSeconds) => {
+  if (!redisClient) return null;
+  try {
+    const [[, total]] = await redisClient.multi().incr(key).expire(key, ttlSeconds).exec();
+    return total;
+  } catch (err) {
+    logger.warn(`[Redis] Falló incrementar contador para key "${key}":`, err.message);
+    return null;
+  }
+};
+
+/**
+ * Helper para reiniciar un contador (p.ej. al iniciar sesión correctamente).
+ */
+export const resetCounter = async (key) => {
+  if (!redisClient) return;
+  try {
+    await redisClient.del(key);
+  } catch (err) {
+    logger.warn(`[Redis] Falló reiniciar contador para key "${key}":`, err.message);
+  }
+};
+
 export default redisClient;
