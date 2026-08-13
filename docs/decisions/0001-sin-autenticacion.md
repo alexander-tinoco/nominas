@@ -1,7 +1,9 @@
 # Decision: Sin Autenticación (Viewer Contable Local)
 
 ## Status
-Aceptado
+Reemplazada por [0004-autenticacion-jwt-y-logs-seguridad](./0004-autenticacion-jwt-y-logs-seguridad.md)
+
+> Se conserva este documento como registro histórico de la decisión original. A partir de la 0004, el visor sí implementa autenticación (JWT + roles) y ya no depende exclusivamente de la seguridad perimetral de red descrita abajo.
 
 ## Contexto
 El visor contable procesa registros históricos y confidenciales de nóminas gubernamentales locales. El sistema no incluye capacidades de edición ni modificación de datos en caliente (es un sistema de análisis e informes de solo lectura).
