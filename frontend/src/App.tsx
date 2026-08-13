@@ -1,13 +1,16 @@
 import { useEffect, useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useStore } from './store/useStore';
+import { useAuthStore } from './store/useAuthStore';
 import { QuincenaTimeline } from './components/QuincenaTimeline';
 import { LeftBookPage } from './components/LeftBookPage';
 import { RightBookPage } from './components/RightBookPage';
 import { PayStubDetail } from './components/PayStubDetail';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { LoginPage } from './components/LoginPage';
+import { SecurityLogsPanel } from './components/SecurityLogsPanel';
 import { trackEvent } from './utils/analytics';
-import { BookOpen, Sun, Moon } from 'lucide-react';
+import { BookOpen, Sun, Moon, LogOut, ShieldAlert } from 'lucide-react';
 
 // Instanciar el Query Client para React Query
 const queryClient = new QueryClient({
@@ -21,6 +24,8 @@ const queryClient = new QueryClient({
 
 function MainDashboard() {
   const { selectedQna, selectedRfc } = useStore();
+  const { user, logout } = useAuthStore();
+  const [showLogs, setShowLogs] = useState(false);
 
   // Detectar y guardar estado del tema (Modo Oscuro / Claro)
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
@@ -80,20 +85,54 @@ function MainDashboard() {
               </span>
             </div>
             
-            {/* Toggle de Modo Oscuro */}
-            <button
-              onClick={toggleTheme}
-              className="p-1.5 rounded-sm hover:bg-accounting-indigo/10 dark:hover:bg-zinc-800 transition-colors focus:ring-1 focus:ring-accounting-green focus:outline-none"
-              aria-label={theme === 'light' ? 'Cambiar a modo oscuro' : 'Cambiar a modo claro'}
-              type="button"
-            >
-              {theme === 'light' ? (
-                <Moon className="w-4 h-4 text-accounting-indigo" />
-              ) : (
-                <Sun className="w-4 h-4 text-amber-400" />
+            <div className="flex items-center gap-3">
+              {/* Identidad de sesión */}
+              {user && (
+                <span className="hidden sm:inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider text-accounting-graphite dark:text-zinc-400 border border-accounting-indigo/10 dark:border-zinc-800 rounded-sm px-2 py-1">
+                  {user.email}
+                  <span className="font-bold text-accounting-indigo dark:text-zinc-200">· {user.rol}</span>
+                </span>
               )}
-            </button>
+
+              {/* Bitácora de seguridad (solo admin) */}
+              {user?.rol === 'admin' && (
+                <button
+                  onClick={() => setShowLogs(true)}
+                  className="p-1.5 rounded-sm hover:bg-accounting-indigo/10 dark:hover:bg-zinc-800 transition-colors focus:ring-1 focus:ring-accounting-green focus:outline-none"
+                  aria-label="Ver bitácora de seguridad"
+                  type="button"
+                >
+                  <ShieldAlert className="w-4 h-4 text-accounting-indigo dark:text-zinc-200" />
+                </button>
+              )}
+
+              {/* Cerrar sesión */}
+              <button
+                onClick={() => logout()}
+                className="p-1.5 rounded-sm hover:bg-accounting-indigo/10 dark:hover:bg-zinc-800 transition-colors focus:ring-1 focus:ring-accounting-green focus:outline-none"
+                aria-label="Cerrar sesión"
+                type="button"
+              >
+                <LogOut className="w-4 h-4 text-accounting-indigo dark:text-zinc-200" />
+              </button>
+
+              {/* Toggle de Modo Oscuro */}
+              <button
+                onClick={toggleTheme}
+                className="p-1.5 rounded-sm hover:bg-accounting-indigo/10 dark:hover:bg-zinc-800 transition-colors focus:ring-1 focus:ring-accounting-green focus:outline-none"
+                aria-label={theme === 'light' ? 'Cambiar a modo oscuro' : 'Cambiar a modo claro'}
+                type="button"
+              >
+                {theme === 'light' ? (
+                  <Moon className="w-4 h-4 text-accounting-indigo" />
+                ) : (
+                  <Sun className="w-4 h-4 text-amber-400" />
+                )}
+              </button>
+            </div>
           </div>
+
+          {showLogs && <SecurityLogsPanel onClose={() => setShowLogs(false)} />}
 
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto_1fr] gap-4 lg:gap-8 items-stretch flex-1">
             
@@ -132,11 +171,35 @@ function MainDashboard() {
   );
 }
 
+function AuthGate() {
+  const { status, checkSession } = useAuthStore();
+
+  useEffect(() => {
+    checkSession();
+  }, [checkSession]);
+
+  if (status === 'idle' || status === 'loading') {
+    return (
+      <div className="min-h-screen bg-accounting-paper dark:bg-zinc-950 flex items-center justify-center transition-colors duration-200">
+        <p className="font-mono text-xs uppercase tracking-widest text-accounting-graphite dark:text-zinc-400">
+          Verificando sesión...
+        </p>
+      </div>
+    );
+  }
+
+  if (status === 'unauthenticated') {
+    return <LoginPage />;
+  }
+
+  return <MainDashboard />;
+}
+
 function App() {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <MainDashboard />
+        <AuthGate />
       </QueryClientProvider>
     </ErrorBoundary>
   );

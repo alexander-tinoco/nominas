@@ -114,14 +114,58 @@ export interface ReporteConceptosResponse {
 // Peticiones Fetch Básicas
 // ==========================================
 
-async function fetchJson<T>(url: string): Promise<T> {
-  const response = await fetch(url);
+async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(url, { credentials: 'include', ...init });
   if (!response.ok) {
     const errorBody = await response.json().catch(() => ({}));
-    throw new Error(errorBody.error || `HTTP error! status: ${response.status}`);
+    const error = new Error(errorBody.error || `HTTP error! status: ${response.status}`) as Error & { status?: number };
+    error.status = response.status;
+    throw error;
   }
   return response.json() as Promise<T>;
 }
+
+function fetchJsonWithBody<T>(url: string, method: string, body: unknown): Promise<T> {
+  return fetchJson<T>(url, {
+    method,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+}
+
+// ==========================================
+// Autenticación (login, sesión, roles)
+// ==========================================
+
+export interface UsuarioSesion {
+  id: number;
+  email: string;
+  rol: 'admin' | 'usuario';
+  nombre?: string;
+}
+
+export interface LogSeguridad {
+  id: number;
+  fecha_hora: string;
+  usuario: string;
+  evento: string;
+  nivel: 'INFO' | 'WARNING' | 'ERROR' | 'DEBUG';
+  detalle: Record<string, unknown> | null;
+}
+
+export const authApi = {
+  login: (email: string, password: string) =>
+    fetchJsonWithBody<{ usuario: UsuarioSesion }>(`${API_BASE_URL}/api/auth/login`, 'POST', { email, password }),
+
+  logout: () => fetchJsonWithBody<{ message: string }>(`${API_BASE_URL}/api/auth/logout`, 'POST', {}),
+
+  me: () => fetchJson<{ usuario: UsuarioSesion }>(`${API_BASE_URL}/api/auth/me`),
+
+  updateProfile: (campo: 'nombre' | 'email', valor: string) =>
+    fetchJsonWithBody<{ usuario: UsuarioSesion }>(`${API_BASE_URL}/api/auth/profile`, 'PATCH', { campo, valor }),
+
+  getLogsSeguridad: () => fetchJson<{ data: LogSeguridad[] }>(`${API_BASE_URL}/api/admin/logs-seguridad`)
+};
 
 // ==========================================
 // Clientes API REST
