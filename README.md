@@ -1,74 +1,74 @@
-# Sistema de Auditoría y Consulta de Nóminas (SEP 2018)
+# Payroll Audit and Query System (SEP 2018)
 
-Este repositorio contiene una solución completa de ingeniería de datos y desarrollo de software para procesar, consultar y visualizar la nómina pública de personal gubernamental/educativo (correspondiente a la quincena 06 de 2018 — segunda quincena de marzo de 2018).
+This repository contains a complete data engineering and software development solution to process, query, and visualize public payroll data for government/education personnel (corresponding to biweekly period 06 of 2018 — second biweekly period of March 2018).
 
 ---
 
-## Estado del Proyecto
+## Project Status
 
-| Indicador | Estado |
+| Indicator | Status |
 |---|---|
-| **CI (Integración Continua)** | ![CI](https://github.com/alexander-tinoco/nominas/actions/workflows/ci.yml/badge.svg) |
-| **CD (Despliegue Continuo)** | ![CD](https://github.com/alexander-tinoco/nominas/actions/workflows/cd.yml/badge.svg) |
-| **Documentación de API** | [![API Docs](https://img.shields.io/badge/OpenAPI-Swagger-green.svg)](http://localhost:3000/api/docs) |
-| **Licencia** | [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) |
-| **Docker** | [![Docker Compose](https://img.shields.io/badge/Docker-Compose-blue.svg)](#cómo-ejecutar-con-docker) |
-| **Calidad de Commits** | **Convencionales (Husky + Commitlint)** |
-| **Gobernanza** | **ADRs (docs/decisions) & Release-it** |
-| **Cobertura de tests (Backend)** | **100 % verde (97 tests unitarios)** |
+| **CI (Continuous Integration)** | ![CI](https://github.com/alexander-tinoco/nominas/actions/workflows/ci.yml/badge.svg) |
+| **CD (Continuous Deployment)** | ![CD](https://github.com/alexander-tinoco/nominas/actions/workflows/cd.yml/badge.svg) |
+| **API Documentation** | [![API Docs](https://img.shields.io/badge/OpenAPI-Swagger-green.svg)](http://localhost:3000/api/docs) |
+| **License** | [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) |
+| **Docker** | [![Docker Compose](https://img.shields.io/badge/Docker-Compose-blue.svg)](#how-to-run-with-docker-recommended) |
+| **Commit Quality** | **Conventional (Husky + Commitlint)** |
+| **Governance** | **ADRs (docs/decisions) & Release-it** |
+| **Test Coverage (Backend)** | **100 % green (97 unit tests)** |
 
 
 ---
 
-## Arquitectura del Sistema
+## System Architecture
 
-El siguiente diagrama muestra el flujo de datos y la relación entre los distintos módulos del ecosistema, incluyendo la capa de caché con Redis, el monitoreo con Prometheus/Grafana y el seguimiento de excepciones con Sentry:
+The following diagram shows the data flow and the relationship between the different modules of the ecosystem, including the Redis caching layer, Prometheus/Grafana monitoring, and Sentry exception tracking:
 
 ```mermaid
 graph TD
-    subgraph Cliente
+    subgraph Client
         A[Dashboard React + Vite]
         S_Front[Sentry SDK React]
     end
-    subgraph Servidor
-        B[API REST Express]
+    subgraph Server
+        B[REST API Express]
         E[Swagger UI /api/docs]
         S_Back[Sentry SDK Node]
     end
-    subgraph Almacenamiento_Caché
-        C[(Base de Datos PostgreSQL 16)]
-        R[(Servidor Redis 7)]
+    subgraph Storage_Cache
+        C[(PostgreSQL 16 Database)]
+        R[(Redis 7 Server)]
     end
-    subgraph Monitoreo
+    subgraph Monitoring
         P[(Prometheus Server)]
         G[Grafana Dashboards]
     end
-    subgraph Procesamiento
+    subgraph Processing
         D[ETL Pipeline Python]
     end
 
-    A -->|Peticiones HTTP/JSON| B
-    A -.->|Reporta errores| S_Front
-    B -->|Consulta SQL| C
-    B <-->|Caché de reportes| R
-    B -.->|Reporta excepciones| S_Back
-    E -->|Consulta Esquema| B
-    D -->|Carga masiva SQL| C
-    P -->|Raspa /metrics| B
-    G -->|Muestra paneles| P
+    A -->|HTTP/JSON Requests| B
+    A -.->|Reports errors| S_Front
+    B -->|SQL Query| C
+    B <-->|Report cache| R
+    B -.->|Reports exceptions| S_Back
+    E -->|Queries Schema| B
+    D -->|Bulk SQL load| C
+    P -->|Scrapes /metrics| B
+    G -->|Displays panels| P
 ```
 
 ---
 
-## Contexto de los Datos
+## Data Context
 
-Los datos de entrada constan de dos archivos Excel:
-* **`archivo_1.xlsx` (Maestro):** Registros de pago únicos por plaza contable. Incluye la clave RFC, nombre del empleado, adscripción (Unidad/Subunidad/Centro de Trabajo) e importes totales agrupados.
-* **`archivo_2.xlsx` (Detalle):** Desglose concepto por concepto (percepciones y deducciones como sueldo base, ISR, seguridad social, seguros de vida) ligados al maestro por consecutivo.
+The input data consists of two Excel files:
+* **`archivo_1.xlsx` (Master):** Unique payment records per accounting position. Includes RFC key, employee name, assignment (Unit/Subunit/Work Center), and grouped total amounts.
+* **`archivo_2.xlsx` (Detail):** Item-by-item breakdown (earnings and deductions such as base salary, income tax (ISR), social security, life insurance) linked to the master record by consecutive number.
 
-### Diagrama UML de Entidad-Relación (ERD)
+### Entity-Relationship UML Diagram (ERD)
 
-La estructura física del esquema relacional diseñado e indexado en PostgreSQL se detalla en el siguiente modelo de datos (notación Crow's Foot):
+The physical structure of the relational schema designed and indexed in PostgreSQL is detailed in the following data model (Crow's Foot notation):
 
 ```mermaid
 erDiagram
@@ -109,78 +109,78 @@ erDiagram
         int qna_fin
     }
 
-    nomina_registros ||--o{ nomina_conceptos : "contiene"
-    conceptos_catalogo ||--o{ nomina_conceptos : "clasifica"
+    nomina_registros ||--o{ nomina_conceptos : "contains"
+    conceptos_catalogo ||--o{ nomina_conceptos : "classifies"
 ```
 
 ---
 
-## Seguridad y acceso a los datos
+## Security and Data Access
 
-* **Autenticación con JWT:** el acceso al visor requiere iniciar sesión. El login entrega un JWT en una cookie `httpOnly` (sin estado en servidor) y todas las rutas de `/api/empleados`, `/api/nomina` y `/api/reportes` exigen sesión iniciada.
-* **Roles:** existen dos roles, `admin` y `usuario`. Las rutas administrativas (`/api/admin/*`, incluida la bitácora de seguridad) requieren rol `admin`.
-* **Protección contra fuerza bruta:** tras 5 intentos fallidos de login en 15 minutos la cuenta queda bloqueada temporalmente (contador en Redis), además del rate-limiting general por IP.
-* **Logs de seguridad:** cada login (exitoso/fallido), cierre de sesión, acceso no autorizado, acceso denegado por rol y cambio de perfil se registra en la tabla `logs_seguridad` con nivel de severidad (`INFO`/`WARNING`/`ERROR`/`DEBUG`), sin exponer nunca contraseñas ni tokens en los logs.
-* **Detalle y evidencia:** el diseño completo está documentado en [`docs/decisions/0004-autenticacion-jwt-y-logs-seguridad.md`](docs/decisions/0004-autenticacion-jwt-y-logs-seguridad.md) (que reemplaza la decisión original de no tener autenticación, [`docs/decisions/0001-sin-autenticacion.md`](docs/decisions/0001-sin-autenticacion.md)), con evidencia práctica en [`docs/evidencias-practicas-logs.md`](docs/evidencias-practicas-logs.md).
+* **JWT Authentication:** access to the viewer requires logging in. Login issues a JWT in an `httpOnly` cookie (stateless on the server) and all routes under `/api/empleados`, `/api/nomina`, and `/api/reportes` require an active session.
+* **Roles:** there are two roles, `admin` and `usuario`. Administrative routes (`/api/admin/*`, including the security log) require the `admin` role.
+* **Brute-force protection:** after 5 failed login attempts within 15 minutes, the account is temporarily locked (counter stored in Redis), in addition to general per-IP rate limiting.
+* **Security logs:** every login (successful/failed), logout, unauthorized access, access denied by role, and profile change is recorded in the `logs_seguridad` table with a severity level (`INFO`/`WARNING`/`ERROR`/`DEBUG`), never exposing passwords or tokens in the logs.
+* **Details and evidence:** the full design is documented in [`docs/decisions/0004-autenticacion-jwt-y-logs-seguridad.md`](docs/decisions/0004-autenticacion-jwt-y-logs-seguridad.md) (which supersedes the original no-authentication decision, [`docs/decisions/0001-sin-autenticacion.md`](docs/decisions/0001-sin-autenticacion.md)), with practical evidence in [`docs/evidencias-practicas-logs.md`](docs/evidencias-practicas-logs.md).
 
 ---
 
-## Estructura del Repositorio
+## Repository Structure
 
-El proyecto está diseñado bajo una arquitectura modular y limpia:
+The project is designed under a clean, modular architecture:
 
 ```text
 nominas/
-├── docker-compose.yml         → Orquesta PostgreSQL, Redis, Prometheus, Grafana, backend y frontend
-├── prometheus.yml             → Configura los intervalos de raspado de métricas para Prometheus
-├── README.md                  → Esta guía general de inicio rápido
-├── commitlint.config.js       → Reglas para validar mensajes de commits convencionales
-├── .release-it.json           → Configuración para la generación de releases, tags y changelogs
-├── .husky/                    → Hooks de Git (pre-commit y commit-msg) para control de calidad
-├── raw_data/                  → Almacena los archivos excel originales (excluidos del commit)
+├── docker-compose.yml         → Orchestrates PostgreSQL, Redis, Prometheus, Grafana, backend, and frontend
+├── prometheus.yml             → Configures metric scrape intervals for Prometheus
+├── README.md                  → This general quick-start guide
+├── commitlint.config.js       → Rules for validating conventional commit messages
+├── .release-it.json           → Configuration for generating releases, tags, and changelogs
+├── .husky/                    → Git hooks (pre-commit and commit-msg) for quality control
+├── raw_data/                  → Stores the original Excel files (excluded from commits)
 │
 ├── .github/
 │   ├── workflows/
-│   │   ├── ci.yml             → Pipeline CI: lint, typecheck, tests, scan de secretos y build
-│   │   └── cd.yml             → Pipeline CD: build Docker + push a GHCR
-│   ├── ISSUE_TEMPLATE/        → Plantillas para Bugs y Features
-│   └── PULL_REQUEST_TEMPLATE.md → Plantilla de revisión para PRs
+│   │   ├── ci.yml             → CI pipeline: lint, typecheck, tests, secret scanning, and build
+│   │   └── cd.yml             → CD pipeline: Docker build + push to GHCR
+│   ├── ISSUE_TEMPLATE/        → Templates for Bugs and Features
+│   └── PULL_REQUEST_TEMPLATE.md → Review template for PRs
 │
-├── docs/                      → DOCUMENTACIÓN GENERAL
-│   └── decisions/             → Architecture Decision Records (ADRs) de diseño
+├── docs/                      → GENERAL DOCUMENTATION
+│   └── decisions/             → Architecture Decision Records (ADRs)
 │
-├── etl/                       → MÓDULO PYTHON (ETL)
-│   ├── etl_nomina.py          → Script ETL de producción (valida y carga en base de datos)
-│   └── tests/                 → Pruebas unitarias de las transformaciones
+├── etl/                       → PYTHON MODULE (ETL)
+│   ├── etl_nomina.py          → Production ETL script (validates and loads into the database)
+│   └── tests/                 → Unit tests for the transformations
 │
-├── backend/                   → MÓDULO NODE.JS (API REST)
-│   ├── migrations/            → Migraciones DDL versionadas de la base de datos (node-pg-migrate)
+├── backend/                   → NODE.JS MODULE (REST API)
+│   ├── migrations/            → Versioned DDL database migrations (node-pg-migrate)
 │   ├── src/
-│   │   ├── controllers/       → Lógica de control y mapeo HTTP
-│   │   ├── services/          → Lógica de negocio, filtros dinámicos y caché de Redis
-│   │   ├── repositories/      → Acceso y consultas directas SQL
-│   │   ├── routes/            → Definición de rutas Express con rate-limiters específicos
-│   │   ├── middleware/        → Logger, error-handler, métricas y validateRequest (Zod)
-│   │   ├── schemas/           → Esquemas de validación estricta de parámetros usando Zod
-│   │   ├── config/db.js       → Pool de conexiones PostgreSQL
-│   │   ├── config/env.js      → Validador estricto fail-fast de variables de entorno
-│   │   ├── config/redis.js    → Cliente y helpers de caché Redis
-│   │   ├── config/swagger.js  → Configuración de Swagger OpenAPI
-│   │   ├── utils/             → Firma/verificación de JWT y logger de eventos de seguridad
-│   │   └── __tests__/         → Suite de tests (117 tests con mocks de base de datos)
-│   ├── eslint.config.js       → Configuración de ESLint (Flat Config)
-│   ├── Dockerfile             → Imagen multi-stage para producción
-│   └── README.md              → Documentación detallada de endpoints
+│   │   ├── controllers/       → Control logic and HTTP mapping
+│   │   ├── services/          → Business logic, dynamic filters, and Redis caching
+│   │   ├── repositories/      → Direct SQL access and queries
+│   │   ├── routes/            → Express route definitions with specific rate limiters
+│   │   ├── middleware/        → Logger, error handler, metrics, and validateRequest (Zod)
+│   │   ├── schemas/           → Strict parameter validation schemas using Zod
+│   │   ├── config/db.js       → PostgreSQL connection pool
+│   │   ├── config/env.js      → Strict fail-fast environment variable validator
+│   │   ├── config/redis.js    → Redis cache client and helpers
+│   │   ├── config/swagger.js  → Swagger OpenAPI configuration
+│   │   ├── utils/             → JWT signing/verification and security event logger
+│   │   └── __tests__/         → Test suite (117 tests with database mocks)
+│   ├── eslint.config.js       → ESLint configuration (Flat Config)
+│   ├── Dockerfile             → Multi-stage image for production
+│   └── README.md              → Detailed endpoint documentation
 │
-└── frontend/                  → MÓDULO REACT (DASHBOARD)
-    ├── src/                   → Vistas, componentes, tracking de errores con Sentry
-    ├── Dockerfile             → Imagen Nginx para producción
-    └── README.md              → Guía de compilación del frontend
+└── frontend/                  → REACT MODULE (DASHBOARD)
+    ├── src/                   → Views, components, error tracking with Sentry
+    ├── Dockerfile             → Nginx image for production
+    └── README.md              → Frontend build guide
 ```
 
-### Diagrama de Clases UML (Arquitectura de 3 Capas - Backend)
+### UML Class Diagram (3-Layer Backend Architecture)
 
-El backend sigue el principio de separación de responsabilidades a través de tres capas desacopladas, interactuando de manera resiliente con Redis y reportando excepciones no controladas a Sentry:
+The backend follows the separation-of-concerns principle across three decoupled layers, interacting resiliently with Redis and reporting uncaught exceptions to Sentry:
 
 ```mermaid
 classDiagram
@@ -211,138 +211,138 @@ classDiagram
         +setupExpressErrorHandler()
     }
 
-    Router --> Controller : "Rutea a"
-    Controller --> Service : "Invoca a"
-    Service --> Repository : "Consulta SQL"
-    Service <--> Redis_Cache : "Verifica/Guarda"
-    Controller --> Sentry_SDK : "Captura fallas"
+    Router --> Controller : "Routes to"
+    Controller --> Service : "Invokes"
+    Service --> Repository : "SQL query"
+    Service <--> Redis_Cache : "Checks/Stores"
+    Controller --> Sentry_SDK : "Captures failures"
 ```
 
 ---
 
-## Variables de Entorno
+## Environment Variables
 
-El proyecto se configura dinámicamente mediante las siguientes variables de entorno:
+The project is configured dynamically through the following environment variables:
 
 ### Backend (`backend/.env`)
 
-| Variable | Descripción | Valor por Defecto |
+| Variable | Description | Default Value |
 |---|---|---|
-| `PORT` | Puerto de escucha de la API REST | `3000` |
-| `PGHOST` | Servidor de base de datos PostgreSQL | `localhost` |
-| `PGPORT` | Puerto de base de datos PostgreSQL | `5433` |
-| `PGUSER` | Usuario de base de datos PostgreSQL | `postgres` |
-| `PGPASSWORD` | Contraseña de base de datos PostgreSQL | `postgres_password` |
-| `PGDATABASE` | Nombre de la base de datos | `nominas` |
-| `CORS_ORIGIN` | Orígenes CORS permitidos | `*` |
-| `REDIS_URL` | URL de conexión para el almacén de caché Redis | `redis://localhost:6379` |
-| `SENTRY_DSN` | DSN de Sentry para error tracking en producción | `""` |
-| `LOG_LEVEL` | Nivel mínimo para logger (Pino) | `info` |
-| `JWT_SECRET` | Clave secreta para firmar y verificar los JWT de sesión | *(requerida en producción)* |
-| `JWT_EXPIRES_IN` | Tiempo de expiración del JWT de sesión | `2h` |
+| `PORT` | REST API listening port | `3000` |
+| `PGHOST` | PostgreSQL database server | `localhost` |
+| `PGPORT` | PostgreSQL database port | `5433` |
+| `PGUSER` | PostgreSQL database user | `postgres` |
+| `PGPASSWORD` | PostgreSQL database password | `postgres_password` |
+| `PGDATABASE` | Database name | `nominas` |
+| `CORS_ORIGIN` | Allowed CORS origins | `*` |
+| `REDIS_URL` | Connection URL for the Redis cache store | `redis://localhost:6379` |
+| `SENTRY_DSN` | Sentry DSN for error tracking in production | `""` |
+| `LOG_LEVEL` | Minimum level for the logger (Pino) | `info` |
+| `JWT_SECRET` | Secret key for signing and verifying session JWTs | *(required in production)* |
+| `JWT_EXPIRES_IN` | Session JWT expiration time | `2h` |
 
 ### Frontend (`frontend/.env`)
 
-| Variable | Descripción | Valor por Defecto |
+| Variable | Description | Default Value |
 |---|---|---|
-| `VITE_API_URL` | Endpoint base de la API REST del backend | `http://localhost:3000` |
-| `VITE_SENTRY_DSN` | DSN de Sentry para el dashboard React | `""` |
+| `VITE_API_URL` | Base endpoint of the backend REST API | `http://localhost:3000` |
+| `VITE_SENTRY_DSN` | Sentry DSN for the React dashboard | `""` |
 
 ---
 
-## Cómo Ejecutar con Docker (Recomendado)
+## How to Run with Docker (Recommended)
 
-Puedes inicializar todo el ecosistema (Base de Datos + Redis + Prometheus + Grafana + API REST + Dashboard Frontend) en segundo plano con un solo comando:
+You can start the entire ecosystem (Database + Redis + Prometheus + Grafana + REST API + Frontend Dashboard) in the background with a single command:
 
 ```bash
 docker compose up -d
 ```
 
-| Servicio | URL |
+| Service | URL |
 |---|---|
-| **Dashboard Frontend** | [http://localhost:80](http://localhost:80) |
-| **API REST Backend** | [http://localhost:3000](http://localhost:3000) |
+| **Frontend Dashboard** | [http://localhost:80](http://localhost:80) |
+| **Backend REST API** | [http://localhost:3000](http://localhost:3000) |
 | **Swagger Docs** | [http://localhost:3000/api/docs](http://localhost:3000/api/docs) |
-| **Métricas (Prometheus compatible)** | [http://localhost:3000/metrics](http://localhost:3000/metrics) |
-| **Servidor Prometheus** | [http://localhost:9090](http://localhost:9090) |
-| **Paneles Grafana** (User: `admin` / Pwd: `admin`) | [http://localhost:3001](http://localhost:3001) |
-| **Base de Datos (PostgreSQL)** | `localhost:5433` |
-| **Servidor Redis** | `localhost:6379` |
+| **Metrics (Prometheus-compatible)** | [http://localhost:3000/metrics](http://localhost:3000/metrics) |
+| **Prometheus Server** | [http://localhost:9090](http://localhost:9090) |
+| **Grafana Panels** (User: `admin` / Pwd: `admin`) | [http://localhost:3001](http://localhost:3001) |
+| **Database (PostgreSQL)** | `localhost:5433` |
+| **Redis Server** | `localhost:6379` |
 
-*Nota: Una vez levantado el entorno, debes ejecutar el ETL para poblar la base de datos (ver Paso 2 en la sección siguiente).*
+*Note: Once the environment is up, you must run the ETL to populate the database (see Step 2 in the next section).*
 
-#### Monitoreo, Observabilidad y Reporte de Excepciones
+#### Monitoring, Observability, and Exception Reporting
 
-##### Monitoreo con Prometheus y Grafana
-Grafana viene pre-configurado para conectarse a Prometheus y cargar de manera automática el dashboard de producción "Auditoría de Nóminas - NodeJS Metrics" para monitorear latencia, RPS, códigos de estado, CPU y memoria:
+##### Monitoring with Prometheus and Grafana
+Grafana comes pre-configured to connect to Prometheus and automatically loads the production dashboard "Auditoría de Nóminas - NodeJS Metrics" to monitor latency, RPS, status codes, CPU, and memory:
 
 ![Grafana Dashboard](docs/images/grafana_dashboard.png)
 
-##### Reporte de Excepciones con Sentry
-El proyecto integra Sentry tanto en el frontend como en el backend para reportar y dar seguimiento a errores no controlados en tiempo real en entornos de producción:
+##### Exception Reporting with Sentry
+The project integrates Sentry in both the frontend and backend to report and track uncaught errors in real time in production environments:
 
 ![Sentry Dashboard](docs/images/sentry_dashboard.png)
 
 ---
 
-## Cómo Ejecutar de Forma Local (Desarrollo)
+## How to Run Locally (Development)
 
-### Diagrama de Secuencia UML (Proceso del ETL Pipeline)
+### UML Sequence Diagram (ETL Pipeline Process)
 
-El ciclo de vida del pipeline ETL de Python (Extracción, Limpieza y Transformación en funciones puras y Carga en lotes con índices optimizados) se ilustra en el siguiente diagrama:
+The lifecycle of the Python ETL pipeline (Extraction, Cleaning and Transformation in pure functions, and Loading in batches with optimized indexes) is illustrated in the following diagram:
 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor CLI as Usuario (CLI)
+    actor CLI as User (CLI)
     participant ETL as Script etl_nomina.py
-    participant Excel1 as Archivo Maestro (.xlsx)
-    participant Excel2 as Archivo Detalle (.xlsx)
+    participant Excel1 as Master File (.xlsx)
+    participant Excel2 as Detail File (.xlsx)
     participant DB as PostgreSQL 16
 
-    CLI->>ETL: Ejecuta con parámetros (--mode, --chunksize)
+    CLI->>ETL: Runs with parameters (--mode, --chunksize)
     activate ETL
-    ETL->>Excel1: Lee y parsea filas (pd.read_excel)
-    Excel1-->>ETL: DataFrame Maestro
-    ETL->>Excel2: Lee y parsea detalles (pd.read_excel)
-    Excel2-->>ETL: DataFrame Detalle
-    Note over ETL: Etapa de Transformación:<br/>1. Clean text (strip)<br/>2. Cast types (int/float)<br/>3. Filter orphan rows (Integridad Referencial)
-    ETL->>DB: Trunca/Crea tablas (DDL - Mode: initial)
-    DB-->>ETL: Confirmación
-    ETL->>DB: Carga Catálogo Conceptos únicos
-    ETL->>DB: Inserta Registros Maestros (en lotes/chunks)
-    ETL->>DB: Inserta Registros de Detalle (en lotes/chunks)
-    DB-->>ETL: Éxito en la transaccionalidad de carga
-    ETL-->>CLI: Pipeline finalizado con éxito
+    ETL->>Excel1: Reads and parses rows (pd.read_excel)
+    Excel1-->>ETL: Master DataFrame
+    ETL->>Excel2: Reads and parses details (pd.read_excel)
+    Excel2-->>ETL: Detail DataFrame
+    Note over ETL: Transformation Stage:<br/>1. Clean text (strip)<br/>2. Cast types (int/float)<br/>3. Filter orphan rows (Referential Integrity)
+    ETL->>DB: Truncates/Creates tables (DDL - Mode: initial)
+    DB-->>ETL: Confirmation
+    ETL->>DB: Loads unique Concept Catalog
+    ETL->>DB: Inserts Master Records (in batches/chunks)
+    ETL->>DB: Inserts Detail Records (in batches/chunks)
+    DB-->>ETL: Load transaction success
+    ETL-->>CLI: Pipeline finished successfully
     deactivate ETL
 ```
 
-### Instrucciones de ejecución local:
+### Local execution instructions:
 
-#### 1. Levantar Servicios Requeridos (BD y Redis)
+#### 1. Start Required Services (DB and Redis)
 ```bash
 docker compose up -d db redis
 ```
 
-#### 2. Ejecutar Pipeline ETL (Python)
+#### 2. Run the ETL Pipeline (Python)
 ```bash
-# Crear entorno virtual e instalar librerías
+# Create a virtual environment and install libraries
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r etl/requirements.txt
 
-# Correr el pipeline ETL (limpia, valida y carga 292k registros en ~35 segundos e indexa la base de datos)
+# Run the ETL pipeline (cleans, validates, and loads 292k records in ~35 seconds and indexes the database)
 python etl/etl_nomina.py --mode initial --chunksize 10000
 ```
 
-#### 3. Ejecutar API REST (Node.js)
+#### 3. Run the REST API (Node.js)
 ```bash
 cd backend
 npm install
 npm run dev
 ```
 
-#### 4. Ejecutar Dashboard Frontend (React)
+#### 4. Run the Frontend Dashboard (React)
 ```bash
 cd frontend
 npm install
@@ -351,47 +351,47 @@ npm run dev
 
 ---
 
-## Endpoints Disponibles (API)
+## Available Endpoints (API)
 
-A continuación se detallan las rutas principales expuestas por la API REST:
+The main routes exposed by the REST API are detailed below:
 
-* **`GET /health`** - Chequeo de estado de salud mejorado del sistema (DB status, uptime, uso de memoria).
-* **`GET /metrics`** - Exposición de métricas globales del sistema en formato Prometheus (peticiones HTTP, duración de respuestas).
-* **`GET /api/docs`** - Interfaz de documentación interactiva de Swagger/OpenAPI.
-* **`POST /api/auth/login`** - Inicia sesión y entrega un JWT en cookie `httpOnly` (público, con rate-limiting estricto y bloqueo tras 5 intentos fallidos).
-* **`POST /api/auth/logout`** - Cierra la sesión actual.
-* **`GET /api/auth/me`** - Devuelve el usuario autenticado.
-* **`PATCH /api/auth/profile`** - Actualiza `nombre` o `email` propio y audita el cambio.
-* **`GET /api/admin/logs-seguridad`** - Consulta la bitácora de eventos de seguridad (requiere rol `admin`).
+* **`GET /health`** - Enhanced system health check (DB status, uptime, memory usage).
+* **`GET /metrics`** - Exposes global system metrics in Prometheus format (HTTP requests, response durations).
+* **`GET /api/docs`** - Interactive Swagger/OpenAPI documentation interface.
+* **`POST /api/auth/login`** - Logs in and issues a JWT in an `httpOnly` cookie (public, with strict rate-limiting and lockout after 5 failed attempts).
+* **`POST /api/auth/logout`** - Ends the current session.
+* **`GET /api/auth/me`** - Returns the authenticated user.
+* **`PATCH /api/auth/profile`** - Updates one's own `nombre` or `email` and audits the change.
+* **`GET /api/admin/logs-seguridad`** - Queries the security event log (requires `admin` role).
 
-#### Documentación Interactiva con Swagger
+#### Interactive Documentation with Swagger
 
-El backend expone la especificación OpenAPI de todos sus endpoints de forma interactiva en `/api/docs`:
+The backend exposes the OpenAPI specification for all its endpoints interactively at `/api/docs`:
 
-| Vista de Endpoints en Swagger | Detalle de Modelos y Parámetros |
+| Endpoints View in Swagger | Models and Parameters Detail |
 | :---: | :---: |
-| ![Swagger Endpoints](docs/images/swagger_docs_1.png) | ![Swagger Detalle](docs/images/swagger_docs_2.png) |
+| ![Swagger Endpoints](docs/images/swagger_docs_1.png) | ![Swagger Detail](docs/images/swagger_docs_2.png) |
 
-Las siguientes rutas requieren sesión iniciada (cualquier rol):
+The following routes require an active session (any role):
 
-* **`GET /api/empleados`** - Lista paginada y filtrable de empleados ordenados por nombre.
-* **`GET /api/empleados/:rfc`** - Historial detallado de recibos del empleado asociado a un RFC.
-* **`GET /api/nomina`** - Consulta estructurada de recibos de nómina con soporte de 32 filtros combinados y resumen de acumulados.
-* **`GET /api/nomina/:num_cons`** - Desglose de percepciones y deducciones de un recibo específico.
-* **`GET /api/reportes/por-unidad`** - Acumulados financieros agrupados por unidad y/o subunidad (Cacheado en Redis con TTL de 10 min).
-* **`GET /api/reportes/conceptos`** - Sumatorias acumuladas globales para cada concepto de nómina (Cacheado en Redis con TTL de 10 min).
+* **`GET /api/empleados`** - Paginated and filterable list of employees ordered by name.
+* **`GET /api/empleados/:rfc`** - Detailed receipt history for the employee associated with an RFC.
+* **`GET /api/nomina`** - Structured payroll receipt query with support for 32 combined filters and accumulated summary.
+* **`GET /api/nomina/:num_cons`** - Breakdown of earnings and deductions for a specific receipt.
+* **`GET /api/reportes/por-unidad`** - Financial totals grouped by unit and/or subunit (cached in Redis with a 10-minute TTL).
+* **`GET /api/reportes/conceptos`** - Global accumulated sums for each payroll concept (cached in Redis with a 10-minute TTL).
 
 ---
 
-## Gobernanza, Calidad y Estabilidad
+## Governance, Quality, and Stability
 
-El proyecto incorpora un ecosistema moderno para garantizar la calidad del código, versionado y control de despliegues:
+The project incorporates a modern ecosystem to ensure code quality, versioning, and deployment control:
 
-1. **Migraciones Versionadas**: La creación del esquema y los índices en PostgreSQL se encuentra separada del script ETL y es administrada por `node-pg-migrate` bajo `backend/migrations/`. El contenedor del backend las ejecuta automáticamente al iniciar.
-2. **Validación con Zod**: Todos los parámetros de query y de ruta (como `num_cons`) en los endpoints se validan rígidamente en tiempo de ejecución. Los errores se formatean en respuestas estandarizadas `400 Bad Request` para mejorar la seguridad y la consistencia.
-3. **Calidad de Commits (Git Hooks)**: Configurado con `husky` y `lint-staged`. Cada commit convencional es validado por `commitlint`, garantizando que se respete el estándar de commits convencionales. Adicionalmente, `lint-staged` corre linters (ESLint y Oxlint) y unit tests locales para evitar código inestable en el historial de Git.
-4. **Architecture Decision Records (ADRs)**: Se documentan las decisiones técnicas fundamentales del portafolio en `docs/decisions/` para transparentar supuestos de diseño y facilitar la incorporación de colaboradores.
-5. **Releases Automatizados**: Integra `release-it` para versionar la aplicación de manera semántica (`patch`, `minor`, `major`), actualizar el `CHANGELOG.md` automáticamente a partir de commits convencionales, crear tags de Git y publicar el release en GitHub.
+1. **Versioned Migrations**: Schema and index creation in PostgreSQL is separated from the ETL script and managed by `node-pg-migrate` under `backend/migrations/`. The backend container runs them automatically on startup.
+2. **Validation with Zod**: All query and route parameters (such as `num_cons`) in the endpoints are strictly validated at runtime. Errors are formatted into standardized `400 Bad Request` responses to improve security and consistency.
+3. **Commit Quality (Git Hooks)**: Configured with `husky` and `lint-staged`. Every conventional commit is validated by `commitlint`, ensuring adherence to the conventional commits standard. Additionally, `lint-staged` runs linters (ESLint and Oxlint) and local unit tests to prevent unstable code from entering the Git history.
+4. **Architecture Decision Records (ADRs)**: Fundamental technical decisions for the portfolio are documented in `docs/decisions/` to make design assumptions transparent and ease onboarding for collaborators.
+5. **Automated Releases**: Integrates `release-it` to semantically version the application (`patch`, `minor`, `major`), automatically update `CHANGELOG.md` from conventional commits, create Git tags, and publish the release on GitHub.
 
 ---
 
@@ -401,75 +401,75 @@ El proyecto incorpora un ecosistema moderno para garantizar la calidad del códi
 
 ```bash
 cd backend
-npm test               # Ejecutar los 117 tests una vez
-npm run test:watch     # Ejecutar tests en modo watch
-npm run test:coverage  # Generar reporte de cobertura de código
+npm test               # Run the 117 tests once
+npm run test:watch     # Run tests in watch mode
+npm run test:coverage  # Generate code coverage report
 ```
 
 ### Frontend (Vitest + React Testing Library)
 
 ```bash
 cd frontend
-npm test               # Ejecutar los 18 tests de componentes
+npm test               # Run the 18 component tests
 ```
 
 ### ETL (Pytest)
 
 ```bash
 cd etl
-PYTHONPATH=.. .venv/bin/pytest # Ejecutar los 5 tests de transformaciones
+PYTHONPATH=.. .venv/bin/pytest # Run the 5 transformation tests
 ```
 
 ---
 
-## Características de Diseño Contable (Dashboard)
+## Accounting Design Features (Dashboard)
 
-### Capturas de Pantalla de la Interfaz
+### Interface Screenshots
 
-| Vista Principal del Dashboard | Búsqueda Avanzada y Balances |
+| Main Dashboard View | Advanced Search and Balances |
 | :---: | :---: |
-| ![Dashboard Principal](docs/images/dashboard_main.png) | ![Búsqueda Avanzada](docs/images/advanced_search.png) |
+| ![Main Dashboard](docs/images/dashboard_main.png) | ![Advanced Search](docs/images/advanced_search.png) |
 
-| Vista Detalle de Recibo | Vista Impresión PDF | Dashboard en Modo Oscuro |
+| Receipt Detail View | PDF Print View | Dashboard in Dark Mode |
 | :---: | :---: | :---: |
-| ![Vista Detalle de Recibo](docs/images/recibo_detalle.png) | ![Vista Impresión PDF](docs/images/recibo_impresion.png) | ![Dashboard en Modo Oscuro](docs/images/dashboard_dark.png) |
+| ![Receipt Detail View](docs/images/recibo_detalle.png) | ![PDF Print View](docs/images/recibo_impresion.png) | ![Dashboard in Dark Mode](docs/images/dashboard_dark.png) |
 
-### Autenticación y Roles
+### Authentication and Roles
 
-| Pantalla de Login | Error de Credenciales Inválidas |
+| Login Screen | Invalid Credentials Error |
 | :---: | :---: |
-| ![Pantalla de Login](docs/images/login-vacio.png) | ![Credenciales Inválidas](docs/images/login-credenciales-invalidas.png) |
+| ![Login Screen](docs/images/login-vacio.png) | ![Invalid Credentials](docs/images/login-credenciales-invalidas.png) |
 
-| Dashboard como Admin (con bitácora de seguridad) | Dashboard como Usuario (sin panel de admin) |
+| Admin Dashboard (with security log) | User Dashboard (without admin panel) |
 | :---: | :---: |
-| ![Dashboard Admin](docs/images/dashboard-admin.png) | ![Dashboard Usuario](docs/images/dashboard-usuario-sin-panel-admin.png) |
+| ![Admin Dashboard](docs/images/dashboard-admin.png) | ![User Dashboard](docs/images/dashboard-usuario-sin-panel-admin.png) |
 
-### Diagrama de Estados UML (Navegación y Estados en React)
+### UML State Diagram (Navigation and States in React)
 
-El flujo de estados y transiciones en la interfaz contable del frontend (dashboard) gestionada por Zustand se describe a continuación:
+The flow of states and transitions in the frontend accounting interface (dashboard), managed by Zustand, is described below:
 
 ```mermaid
 stateDiagram-v2
-    [*] --> VistaCuentas : Carga inicial del Dashboard
-    
+    [*] --> VistaCuentas : Initial Dashboard load
+
     state VistaCuentas {
-        [*] --> CatalogoPersonal : Tab por defecto (Búsqueda Simple)
-        CatalogoPersonal --> BúsquedaAvanzada : Clic en tab "Filtros Avanzados"
-        BúsquedaAvanzada --> CatalogoPersonal : Clic en tab "Personal"
+        [*] --> CatalogoPersonal : Default tab (Simple Search)
+        CatalogoPersonal --> BúsquedaAvanzada : Click "Advanced Filters" tab
+        BúsquedaAvanzada --> CatalogoPersonal : Click "Personal" tab
     }
 
     state VisualizacionRecibo {
         [*] --> ReciboCerrado
-        ReciboCerrado --> ReciboAbierto : Seleccionar Empleado (Fila RFC)
-        ReciboAbierto --> ReciboAbierto : Cambiar Quincena (Clic o ArrowLeft/ArrowRight)
-        ReciboAbierto --> ReciboCerrado : Limpiar selección
+        ReciboCerrado --> ReciboAbierto : Select Employee (RFC Row)
+        ReciboAbierto --> ReciboAbierto : Change Biweekly Period (Click or ArrowLeft/ArrowRight)
+        ReciboAbierto --> ReciboCerrado : Clear selection
     }
 
-    VistaCuentas --> VisualizacionRecibo : Selecciona Empleado (Zustand Store)
+    VistaCuentas --> VisualizacionRecibo : Select Employee (Zustand Store)
 ```
 
-### Detalles de la interfaz:
-* **Filtro de Quincenas Integrado:** La línea de tiempo superior simula talonarios perforados físicos. Puedes moverte entre periodos haciendo clic o usando las **flechas izquierda/derecha de tu teclado**.
-* **Visualización de Balances:** Gráficas con la paleta contable tradicional (verde papel de fondo, tinta índigo, percepciones en oro y deducciones en rojo).
-* **Talón de Pago Digitalizado:** Al hacer clic en un empleado, el sistema renderiza un recibo de nómina con bordes perforados en CSS, desgloses detallados y soporte nativo para impresión.
-* **Seguridad y Accesibilidad:** Enmascaramiento preventivo de RFCs en logs y analítica, cifras monoespaciadas para correcta alineación y manejo fluido del estado asíncrono con React Query.
+### Interface Details:
+* **Integrated Biweekly Period Filter:** The top timeline simulates physical perforated check stubs. You can move between periods by clicking or using the **left/right arrow keys on your keyboard**.
+* **Balance Visualization:** Charts with the traditional accounting palette (green paper background, indigo ink, earnings in gold and deductions in red).
+* **Digitized Pay Stub:** When you click an employee, the system renders a payroll receipt with CSS-perforated edges, detailed breakdowns, and native print support.
+* **Security and Accessibility:** Preventive masking of RFCs in logs and analytics, monospaced figures for proper alignment, and smooth asynchronous state handling with React Query.
